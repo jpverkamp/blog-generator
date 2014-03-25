@@ -4,7 +4,8 @@
 
 (require scribble/reader
          sxml/html
-         xml)
+         xml
+         "post.rkt")
 
 ; Group things by newlines
 (define (combine-by-newlines ls)
@@ -46,7 +47,8 @@
     ; - functions that return an html xexpr are parsed as such
     ; - functions that return a string are processed by the first step
     [_
-     (match (eval chunk)
+     (match (with-handlers ([exn? (λ (exn) (error 'render "~a in ~a" (exn-message exn) chunk))])
+              (eval chunk))
        [(? void?)
         '()]
        [(? string? subchunk)
@@ -107,26 +109,33 @@
   (apply append (map (λ (each) (list each "\n")) ls)))        
 
 ; Parse a string or port containing xexprs
-(define (render in/str #:environment [env (hash)])
-  (define in (if (string? in/str) (open-input-string in/str) in/str))
+(define (render in/str/xexpr #:environment [env (hash)])
   (parameterize ([current-namespace (make-base-namespace)])
+    ; For html elements as functions
     (namespace-require 'html)
+    
+    ; Fix for @ expressions after they've been processed
     (eval `(define @ '@))
+    
+    ; Bind each of the plugins
     (for ([(k v) (in-hash env)])
       (if (procedure? v)
           (eval `(define ,k ,v))
           (eval `(define ,k ',v))))
   
-    (apply string-append 
-           (map xexpr->string
-                (~> in
-                    read-inside
-                    combine-by-newlines
-                    run-at-exps
-                    remove-@-attributes
-                    group-paragraphs
-                    remove-non-paragraphs
-                    insert-newlines)))))
+    ; Actually do the parsing; this is when I'm thankful for Rackjure
+    (cond
+      [(xexpr? in/str/xexpr)
+       (xexpr->string in/str/xexpr)]
+      [else
+       (~> (if (string? in/str/xexpr) (open-input-string in/str/xexpr) in/str/xexpr)
+           read-inside
+           combine-by-newlines
+           run-at-exps
+           remove-@-attributes
+           group-paragraphs
+           remove-non-paragraphs
+           insert-newlines)])))
 
 ; Make it printable
 (define (parsed->string ls)

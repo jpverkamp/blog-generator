@@ -17,6 +17,6 @@
     
     `(div (h3 ,list-title)
           (ol ,@(for/list ([item (in-list (hash-ref rankings list-title))])
-                  `(li (a ((href (local-link ,item))) ,item))))))
+                  `(li (a ((href ,item)) ,item))))))
   
   (register-plugin 'ranking ranking #:pre-render (λ (new-post) (set! post new-post))))

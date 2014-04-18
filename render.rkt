@@ -2,143 +2,71 @@
 
 (provide render)
 
-(require scribble/reader
+(require (only-in markdown parse-markdown)
+         scribble/reader
          sxml/html
          xml
          "post.rkt")
 
-; Group things by newlines
-(define (combine-by-newlines ls)
-  ; Test if something is both a string and not a newline
-  (define (string-not-newline? thing)
-    (and (string? thing)
-         (not (equal? thing "\n"))))
-  
-  (let loop ([ls ls])
-    (match ls
-      ; (string string . rest) -> (string+string . rest)
-      [`(,(? string-not-newline? str1) ,(? string-not-newline? str2) . ,rest)
-       (loop `(,(string-append str1 " " str2) . ,rest))]
-      ; (string newline string . rest) -> (string+newline+string . rest)
-      [`(,(? string-not-newline? str1) "\n" ,(? string-not-newline? str2) . ,rest)
-       (loop `(,(string-append str1 "\n" str2) . ,rest))]
-      ; Skip things that can't be combined
-      [`(,first . ,rest)
-       `(,first . ,(loop rest))]
-      ; End when we're done
-      [`()
-       `()])))
-
-; Parse a 'chunk' (as split by @ expressions)
-; (or/c string? list?) -> (listof xexpr?)
-(define (process-chunk chunk)
-  (match chunk
-    ; Strings / non-@-expressions are parsed to html xexprs
+; Turn anything into a string (xexprs that are elements get parsed, everything else is ~a'd)
+(define (stringify thing)
+  (match thing
+    [(? void?)
+     ""]
     [(? string?)
-     (match (html->xexp chunk)
-       [`(*TOP* . ,rest)
-        rest]
-       [(? list? ls)
-        ls]
-       [result
-        (list result)])]
-    ; Everything else is eval'ed:
-    ; - functions that return void are ignored (return an empty list)
-    ; - functions that return an html xexpr are parsed as such
-    ; - functions that return a string are processed by the first step
-    [_
-     (match (with-handlers ([exn? (λ (exn) (error 'render "~a in ~a" (exn-message exn) chunk))])
-              (eval chunk))
-       [(? void?)
-        '()]
-       [(? string? subchunk)
-        (process-chunk subchunk)]
-       [(? list? ls)
-        (list ls)])]))
+     thing]
+    [(and (? list?) (? xexpr?))
+     (xexpr->string thing)]
+    [any
+     (~a thing)]))
 
-; Process all chunks, evaluating at-expressions and/or parsing to xexprs
+; Process all chunks, evaluating at-expressions and turning everything else into a string
 (define (run-at-exps ls)
   (apply
-   append
-   (filter
-    (negate void?)
-    (for/list ([chunk (in-list ls)] #:break (eof-object? chunk))
-      (process-chunk chunk)))))
+   string-append
+   (for/list ([chunk (in-list ls)] #:break (eof-object? chunk))
+     (stringify (eval chunk)))))
 
-; Recursively remove the extra @ html-parsing inserts for attributes
-(define (remove-@-attributes ls)
-  (map (λ (each) (let recur ([chunk each])
-                   (match chunk
-                     [`(,name (@ (,keys ,vals) ...) . ,children)
-                      `(,name ,(map list keys vals) . ,(map recur children))]
-                     [`(,name . ,children)
-                      `(,name . ,(map recur children))]
-                     [any any])))
-       ls))
+; Flatten a mixed list of strings and x-expressions to an html string
+(define (flatten-to-html ls)
+  (string-join (map stringify ls) "\n"))
 
-; Group paragraphs together (start a new paragraph at a double newline)
-(define (group-paragraphs ls)
-  (let loop ([ls ls] [buffer '()])
-    (match ls
-      ; At the end, output a buffer if we haven't, nothing if we don't
-      [(and '() (? (thunk* (null? buffer))))
-       `()]
-      [`()
-       `((p ,@(reverse buffer)))]
-      ; Double newline means output the buffer
-      [(list-rest "\n" "\n" rest)
-       `((p ,@(reverse buffer)) . ,(loop rest '()))]
-      ; Single newlines are replaced with a space
-      [(list-rest "\n" rest)
-       (loop rest (cons " " buffer))]
-      ; Anything else just gets stuck together
-      [(list-rest first rest)
-       (loop rest (cons first buffer))])))
-
-; Remove paragraph tags if they have only a single child and it's not a string
-(define (remove-non-paragraphs ls)
-  (map (λ (each)
-         (match each
-           [`(p ,(? list? child))
-            child]
-           [_ each]))
-       ls))
-
-; Insert newlines for readability
-(define (insert-newlines ls)
-  (apply append (map (λ (each) (list each "\n")) ls)))        
+; Remove extra whitespace from an 
+(define (strip-excess-whitespace str)
+  (regexp-replace* #px"\n\n+" str "\n\n"))
 
 ; Parse a string or port containing xexprs
-(define (render in/str/xexpr #:environment [env (hash)])
-  (parameterize ([current-namespace (make-base-namespace)])
-    ; For html elements as functions
-    (namespace-require 'html)
+(define (render to-render #:environment [env (hash)])
+  (cond
+    ; Strings should be read and parsed
+    [(string? to-render)
+     (call-with-input-string to-render (λ (in) (render in #:environment env)))]
     
-    ; Fix for @ expressions after they've been processed
-    (eval `(define @ '@))
+    ; Non-string xexprs should be stringed, then parsed
+    ; This will catch at-expressions at the cost of being wicked slow
+    ; TODO: Only recur if there is actually an at-expression in the string
+    [(xexpr? to-render)
+     (render to-render #:environment env)]
     
-    ; Bind each of the plugins
-    (for ([(k v) (in-hash env)])
-      (if (procedure? v)
-          (eval `(define ,k ,v))
-          (eval `(define ,k ',v))))
-  
-    ; Actually do the parsing; this is when I'm thankful for Rackjure
-    (cond
-      [(xexpr? in/str/xexpr)
-       (xexpr->string in/str/xexpr)]
-      [else
-       (~> (if (string? in/str/xexpr) (open-input-string in/str/xexpr) in/str/xexpr)
+    ; Run at-expressions then parse as markdown with embedded html
+    [(input-port? to-render)
+     (parameterize ([current-namespace (make-base-namespace)])
+       ; For html elements as functions
+       (namespace-require 'html)
+       
+       ; Fix for @ expressions after they've been processed
+       (eval `(define @ '@))
+       
+       ; Bind each of the plugins
+       (for ([(k v) (in-hash env)])
+         (if (procedure? v)
+             (eval `(define ,k ,v))
+             (eval `(define ,k ',v))))
+       
+       ; Thank you Rackjure...
+       (~> to-render
            read-inside
-           combine-by-newlines
            run-at-exps
-           remove-@-attributes
-           group-paragraphs
-           remove-non-paragraphs
-           insert-newlines)])))
-
-; Make it printable
-(define (parsed->string ls)
-  (apply string-append (map xexpr->string ls)))
-
-
+           parse-markdown
+           flatten-to-html
+           string-trim))]))

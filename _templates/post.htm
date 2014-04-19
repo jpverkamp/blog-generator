@@ -1,9 +1,37 @@
+<!DOCTYPE html>
 <html>
 <head>
-    <title>jverkamp.com</title>
+    @namespace-require['racket/date]
+    @date-display-format['iso-8601]
+
+    <title>@post{title} | jverkamp.com | John-Paul Verkamp</title>
+
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body>
-@post{content}
+    <header id="branding" role="banner">
+        <hgroup>
+            <h1 id="site-title"><span><a href="http://blog.jverkamp.com/" title="jverkamp.com" rel="home"><span style="color: green;">jv</span>erkamp.com</a></span></h1>
+        </hgroup>
+
+        <nav id="access" role="navigation">
+            <h1 class="section-heading">Main menu</h1>
+            <div class="menu">
+                ...
+            </div>
+        </nav>
+    </header>
+
+    <article>
+        <header>
+            <h1 class="entry-title">@post{title}</h1>
+            <div class="entry-meta">
+                <span>Posted </span><time class="entry-date" datetime="@date->string[@post{date}]" pubdate>@date->string[@post{date}]</time>
+            </div>
+        </header>
+        <div class="entry-content">
+            @post{content}
+        </div>
+    </article>
 </body>
 </html>

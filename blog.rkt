@@ -69,19 +69,19 @@
                                        (post "title")
                                        (exn-message err)))])
     (define date @post{date})
-    (print-progress (format "~a-~a" (~a (date-year date)  #:width 4 #:align 'right #:pad-string "0") (~a (date-month date) #:width 2 #:align 'right #:pad-string "0")))
+    (print-progress (format "~a-~a: ~a" (~a (date-year date)  #:width 4 #:align 'right #:pad-string "0") (~a (date-month date) #:width 2 #:align 'right #:pad-string "0") @post{title}))
     
     ; Allow posts to access their own metadata
     (hash-set! plugins 'post post)
     
     ; Render the main body of the post
     (pre-render! post)
-    (post "content" (render (post "content") #:environment plugins))
+    (post "content" (render (post "content") #:environment plugins #:markdown? #t))
     (post-render! post)
     
     ; Render the template around it
     (define template (hash-ref templates (post "template" #:default "post") "Default: @post{content}"))
-    (post "content" (render template #:environment plugins))))
+    (post "content" (render template #:environment plugins #:markdown? #f))))
 
 (printf "Writing posts...\n")
 (system (format "rm -rf '~a'" output-path))

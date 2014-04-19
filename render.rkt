@@ -56,7 +56,7 @@
     ; This will catch at-expressions at the cost of being wicked slow
     ; TODO: Only recur if there is actually an at-expression in the string
     [(xexpr? to-render)
-     (render to-render #:environment env #:markdown? markdown?)]
+     (render (xexpr->string to-render) #:environment env #:markdown? markdown?)]
     
     ; Run at-expressions then parse as markdown with embedded html
     [(input-port? to-render)
@@ -82,4 +82,8 @@
               read-inside
               run-at-exps
               string-trim
-              strip-excess-whitespace)]))]))
+              strip-excess-whitespace)]))]
+    
+    ; Cannot render other kinds of things
+    [else
+     (error 'render "unknown type of object to render: ~a" to-render)]))

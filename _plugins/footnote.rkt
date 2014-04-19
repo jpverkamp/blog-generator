@@ -3,18 +3,23 @@
 
 (define (footnote . line*)
   (set! my-footnotes (cons line* my-footnotes))
-  `(div (span ,(format "[~a]" (length my-footnotes)))))
+  `(span ((class "footnote")) ,(format "~a" (length my-footnotes))))
 
 (define (clear-footnotes! _)
   (set! my-footnotes '()))
 
 (define (add-footnotes! post)
   (when (not (null? my-footnotes))
-    (post "content" (string-append (post "content")
-                                   (render
-                                    `(div ((id "footnotes"))
-                                          ,@(for/list ([i (in-naturals 1)]
-                                                       [footnote (in-list my-footnotes)])
-                                              `(span ,(format "[~a]" i) ,footnote))))))))
+    (post "content" 
+          (string-append
+           (post "content")
+           (render 
+            `(div ((id "footnotes"))
+                  (ol
+                   ,@(for/list ([footnote (in-list my-footnotes)])
+                       `(li ,(format "~a" (apply string-append footnote))))))
+            #:markdown? #f)))))
 
-(register-plugin 'footnote footnote #:pre-render clear-footnotes! #:post-render add-footnotes!)
+(register-plugin 'footnote footnote)
+(register-pre-render-plugin clear-footnotes!)
+(register-post-render-plugin add-footnotes!)

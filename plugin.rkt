@@ -26,16 +26,17 @@
 (define plugins #f)
 
 ; This will be available to plugins in order to register them to our system
-(define (register-plugin name function
-                         #:pre-render  [pre-render #f]
-                         #:post-render [post-render #f])
+(define (register-plugin name function)
   (when (hash-has-key? plugins name)
     (error 'register-plugin "Duplicate plugin detected: ~a" name))
   (printf "  Plugin registered: ~a\n" name)
-  (hash-set! plugins name function)
-  
-  (when pre-render (set! pre-render-listeners (cons pre-render pre-render-listeners)))
-  (when post-render (set! post-render-listeners (cons post-render post-render-listeners))))
+  (hash-set! plugins name function))
+
+(define (register-pre-render-plugin function)
+  (set! pre-render-listeners (cons function pre-render-listeners)))
+
+(define (register-post-render-plugin function)
+  (set! post-render-listeners (cons function post-render-listeners)))
 
 ; Load all racket files in the _plugins directory
 (define (load-plugins)
@@ -46,6 +47,8 @@
       (parameterize ([current-namespace (make-base-namespace)])
         ; Allow plugin files to register themselves
         (eval `(define register-plugin ,register-plugin))
+        (eval `(define register-pre-render-plugin ,register-pre-render-plugin))
+        (eval `(define register-post-render-plugin ,register-post-render-plugin))
         
         ; Allow plugins access to the rendering function
         (eval `(define render ,render))

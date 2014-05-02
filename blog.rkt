@@ -1,6 +1,8 @@
 #lang at-exp racket
 
-(require racket/date
+(require file/sha1
+         racket/cmdline
+         racket/date
          racket/runtime-path
          "plugin.rkt"
          "post.rkt"
@@ -9,6 +11,10 @@
 (define-runtime-path posts-path "_posts")
 (define-runtime-path output-path "_build")
 (define-runtime-path templates-path "_templates")
+(define-runtime-path cache-path "_cache")
+(define-runtime-path config-file "config.yaml")
+
+(make-directory* cache-path)
 
 (define print-progress
   (let ([current-progress #f])
@@ -29,6 +35,21 @@
          c]
         [else #\-])))
    "-"))
+
+(printf "Loading site config...\n")
+(define site
+  (if (file-exists? config-file)
+      (with-input-from-file config-file read-post)
+      (make-hash)))
+(site "content" #:delete #t)
+
+(define files-to-parse
+  (command-line
+   #:program "blog.rkt"
+   #:once-each 
+   [("--bypass-cache") "Regenerate all pages, ignoring currently cached versions" (site "bypass-cache" #t)]
+   #:args files
+   (map (λ (file) (path->string (path->complete-path (string->path file)))) files)))
 
 (printf "Loading plugins...\n")
 (load-plugins)
@@ -63,25 +84,43 @@
                                            (date->string (post2 "date"))))))))
 
 (printf "Formatting contents...\n")
+(pre-all! posts site)
 (for ([post (in-list posts)])
   (with-handlers ([exn:fail? (λ (err) 
                                (printf "Failed in '~a': ~a\n"
                                        (post "title")
                                        (exn-message err)))])
-    (define date @post{date})
-    (print-progress (format "~a-~a: ~a" (~a (date-year date)  #:width 4 #:align 'right #:pad-string "0") (~a (date-month date) #:width 2 #:align 'right #:pad-string "0") @post{title}))
-    
-    ; Allow posts to access their own metadata
-    (hash-set! plugins 'post post)
-    
-    ; Render the main body of the post
-    (pre-render! post)
-    (post "content" (render (post "content") #:environment plugins #:markdown? #t))
-    (post-render! post)
-    
-    ; Render the template around it
-    (define template (hash-ref templates (post "template" #:default "post") "Default: @post{content}"))
-    (post "content" (render template #:environment plugins #:markdown? #f))))
+    ; Check if we already have a cached version of the post (if we're not bypassing the cache)
+    ; Any files passed on the command line are always reprocessed (although state dependent pages may only partially work)
+    (define cache-file (build-path cache-path (sha1 (open-input-string @post{content}))))
+    (cond
+      [(and (not @site{bypass-cache})
+            (not (member @post{path} files-to-parse))
+            (file-exists? cache-file))
+       (post "content" (file->string cache-file))]
+      [else
+       (define date @post{date})
+       (print-progress (format "Rendering ~a-~a: ~a" (~a (date-year date)  #:width 4 #:align 'right #:pad-string "0") (~a (date-month date) #:width 2 #:align 'right #:pad-string "0") @post{title}))
+       
+       ; Allow posts to access their own metadata and the site's
+       (hash-set! plugins 'post post)
+       (hash-set! plugins 'site site)
+       
+       ; Render the main body of the post
+       (pre-render! post site)
+       (post "content" (render (post "content") #:environment plugins #:markdown? #t))
+       (post-render! post site)
+       
+       ; Render the template around it
+       (define template (hash-ref templates (post "template" #:default "post") "Default: @post{content}"))
+       (post "content" (render template #:environment plugins #:markdown? #f))
+       
+       ; Update the cache file
+       (with-output-to-file cache-file
+         #:exists 'replace
+         (thunk
+           (display @post{content})))])))
+(post-all! posts site)
 
 (printf "Writing posts...\n")
 (system (format "rm -rf '~a'" output-path))
@@ -91,8 +130,6 @@
     ; Use the date to generate the post path
     ; TODO: This should be configurable
     (define date @post{date})
-    (print-progress (format "~a-~a" (~a (date-year date)  #:width 4 #:align 'right #:pad-string "0") (~a (date-month date) #:width 2 #:align 'right #:pad-string "0")))
-    
     (define path 
       (build-path output-path
                   (~a (date-year date)  #:width 4 #:align 'right #:pad-string "0")

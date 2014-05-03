@@ -5,10 +5,10 @@
   (set! my-footnotes (cons line* my-footnotes))
   `(span ((class "footnote")) ,(format "~a" (length my-footnotes))))
 
-(define (clear-footnotes! _)
+(define (clear-footnotes! post site)
   (set! my-footnotes '()))
 
-(define (add-footnotes! post)
+(define (add-footnotes! post site)
   (when (not (null? my-footnotes))
     (post "content" 
           (string-append

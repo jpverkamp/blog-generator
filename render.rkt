@@ -25,6 +25,8 @@
      ""]
     [(? string?)
      thing]
+    [`(pre (,param*) . ,(? (listof string?) body*)) ; Ugly hack to prevent <pre><code> from escaping inner tag
+     (string-replace (xexpr->string `(pre (,param*) "{UGLYHACK}")) "{UGLYHACK}" (apply string-append body*))]
     [(and (? list?) (? xexpr?))
      (xexpr->string thing)]
     [any

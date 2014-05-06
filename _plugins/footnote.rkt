@@ -9,16 +9,11 @@
   (set! my-footnotes '()))
 
 (define (add-footnotes! post site)
-  (when (not (null? my-footnotes))
-    (post "content" 
-          (string-append
-           (post "content")
-           (render 
-            `(div ((id "footnotes"))
-                  (ol
-                   ,@(for/list ([footnote (in-list my-footnotes)])
-                       `(li ,(format "~a" (apply string-append footnote))))))
-            #:markdown? #f)))))
+  (post "footnotes"
+        `(div ((id "footnotes"))
+              (ol
+               ,@(for/list ([footnote (in-list (reverse my-footnotes))])
+                   `(li ,@footnote))))))
 
 (register-plugin 'footnote footnote)
 (register-pre-render-plugin clear-footnotes!)

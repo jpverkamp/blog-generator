@@ -46,7 +46,7 @@
   (regexp-replace* #px"\n\n+" str "\n\n"))
 
 ; Parse a string or port containing xexprs
-(define (render to-render #:environment [env (hash)] #:markdown? markdown?)
+(define (render to-render #:environment [env (hash)] #:markdown? [markdown? #f])
   (cond
     ; Strings should be read and parsed
     [(string? to-render)

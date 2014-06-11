@@ -61,6 +61,12 @@
     (values (regexp-replace #px"\\.[^.]*$" (path->string (file-name-from-path path)) "")
             (file->string path))))
 
+(define (render-template name #:environment [environment (hash)])
+  (define template (hash-ref templates name (format "missing template: ~a" name)))
+  (render template #:environment environment #:markdown? #f))
+
+(hash-set! plugins 'render-template render-template)
+
 (printf "Reading posts...\n")
 (define posts
   (for/list ([path (in-directory posts-path)]
@@ -85,6 +91,7 @@
 
 (printf "Formatting contents...\n")
 (pre-all! posts site)
+
 (for ([post (in-list posts)])
   (with-handlers ([exn:fail? (λ (err) 
                                (printf "Failed in '~a': ~a\n"
@@ -112,8 +119,7 @@
        (post-render! post site)
        
        ; Render the template around it
-       (define template (hash-ref templates (post "template" #:default "post") "Default: @post{content}"))
-       (post "content" (render template #:environment plugins #:markdown? #f))
+       (post "content" (render-template (post "template" #:default "post")))
        
        ; Update the cache file
        (with-output-to-file cache-file

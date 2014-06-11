@@ -25,8 +25,11 @@
      ""]
     [(? string?)
      thing]
-    [`(pre (,param*) . ,(? (listof string?) body*)) ; Ugly hack to prevent <pre><code> from escaping inner tag
-     (string-replace (xexpr->string `(pre (,param*) "{UGLYHACK}")) "{UGLYHACK}" (apply string-append body*))]
+    
+    ; Ugly hacks to prevent <pre><code> from escaping inner tag
+    [`(pre (,param*) . ,(? (listof string?) body*)) (string-replace (xexpr->string `(pre (,param*) "{UGLYHACK}")) "{UGLYHACK}" (apply string-append body*))]
+    [`(pre . ,(? (listof string?) body*))           (string-replace (xexpr->string `(pre "{UGLYHACK}")) "{UGLYHACK}" (apply string-append body*))]
+    
     [(and (? list?) (? xexpr?))
      (xexpr->string thing)]
     [any

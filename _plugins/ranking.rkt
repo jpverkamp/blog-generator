@@ -20,4 +20,4 @@
                 `(li (a ((href ,item)) ,item))))))
   
 (register-plugin 'ranking ranking)
-(register-pre-render-plugin (λ (new-post site) (set! post new-post)))
+(register-pre-render-plugin 'ranking (λ (new-post site) (set! post new-post)))

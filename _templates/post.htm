@@ -1,40 +1,44 @@
 <!DOCTYPE html>
 <html>
 <head>
-    @namespace-require['racket/date]
-    @date-display-format['iso-8601]
+	@namespace-require['racket/date]
+	@date-display-format['iso-8601]
 
-    <title>@post{title} | @site{title} | @site{author}</title>
+	<title>@post{title} | @site{title} | @site{author}</title>
 
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css" />
+  <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+
+	<!-- Using Highlight.js under BSD-3 -->
+	<link rel="stylesheet" href="/highlight/styles/tomorrow-night.css" />
+	<script src="/highlight/highlight.pack.js"></script>
+	<script type="text/javascript">
+		hljs.initHighlightingOnLoad();
+	</script>
+
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body>
-    <header id="branding" role="banner">
-        <hgroup>
-            <h1 id="site-title"><span><a href="http://blog.jverkamp.com/" title="jverkamp.com" rel="home"><span style="color: green;">jv</span>erkamp.com</a></span></h1>
-        </hgroup>
+	<header class="container">
+    @render-template{navbar}
+	</header>
 
-        <nav id="access" role="navigation">
-            <h1 class="section-heading">Main menu</h1>
-            <div class="menu">
-                ...
-            </div>
-        </nav>
-    </header>
-
-    <article>
-        <header>
-            <h1 class="entry-title">@post{title}</h1>
-            <div class="entry-meta">
-                <span>Posted </span><time class="entry-date" datetime="@date->string[@post{date}]" pubdate>@date->string[@post{date}]</time>
-            </div>
-        </header>
-        <div class="entry-content">
-            @post{content}
-        </div>
-        <div class="entry-footnotes">
-            @or[@post{footnotes} ""]
-        </div>
-    </article>
+	<article class="container">
+		<header>
+			<h1 class="entry-title">@post{title}</h1>
+			<div class="entry-meta">
+				<span>Posted </span><time class="entry-date" datetime="@date->string[@post{date}]" pubdate>@date->string[@post{date}]</time>
+			</div>
+		</header>
+		<div class="entry-content">
+			@post{content}
+		</div>
+		<div class="entry-footnotes">
+			@or[@post{footnotes} ""]
+		</div>
+	</article>
 </body>
 </html>

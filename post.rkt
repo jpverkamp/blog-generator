@@ -1,6 +1,7 @@
 #lang at-exp rackjure
 
-(provide read-post)
+(provide read-post
+         empty-post)
 
 (require yaml)
 
@@ -16,6 +17,8 @@
         [(void? val) (hash-ref     (post-data post) key def)]
         [else        (hash-set!    (post-data post) key val)]))
     <post>))
+
+(define (empty-post) (post (make-hash)))
 
 (define (read-post [in (current-input-port)])
   (match (string-split (port->string in) "---")

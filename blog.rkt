@@ -76,25 +76,46 @@
                                  (string<? (date->string (post1 "date"))
                                            (date->string (post2 "date"))))))))
 
+(printf "Generating permalinks...\n")
+(for ([post (in-list posts)])
+  (with-handlers ([exn:fail? (λ (err) (printf "Failed in '~a': ~a\n" (post "title") (exn-message err)))])
+    (define date (or @post{date} (current-date)))
+    
+    (define (0pad thing width) (~a thing  #:width width #:align 'right #:pad-string "0"))
+    (define permalink (or @post{permalink} @site{permalink} "{yymmdd}-{title}"))
+    
+    (define-syntax-rule (-> from to)
+      (when (regexp-match from permalink) 
+        ((thunk (set! permalink (string-replace permalink from to))))))
+    
+    (-> "{year}"   (0pad (date-year date)  4))
+    (-> "{month}"  (0pad (date-month date) 2))
+    (-> "{day}"    (0pad (date-day date)   2))
+    (-> "{yymmdd}" (string-append (0pad (remainder (date-year date) 100) 2) (0pad (date-month date) 2) (0pad (date-day date) 2)))
+    (-> "{title}"  (slug @post{title}))
+    
+    (post "permalink" permalink)))
+
 (printf "Formatting contents...\n")
-(pre-all! posts site)
+(site "posts" posts)
+(pre-all! site)
+(set! posts (site "posts"))
 
 (for ([post (in-list posts)])
-  (with-handlers ([exn:fail? (λ (err) 
-                               (printf "Failed in '~a': ~a\n"
-                                       (post "title")
-                                       (exn-message err)))])
+  (with-handlers ([exn:fail? (λ (err) (printf "Failed in '~a': ~a\n" (post "title") (exn-message err)))])
     ; Check if we already have a cached version of the post (if we're not bypassing the cache)
     ; Any files passed on the command line are always reprocessed (although state dependent pages may only partially work)
-    (define cache-file (build-path cache-path (sha1 (open-input-string @post{content}))))
+    (define cache-file (build-path cache-path (sha1 (open-input-string (~a post)))))
     (cond
-      [(and (not @site{bypass-cache})
+      [(and (not @post{do-not-cache})
+            (not @site{bypass-cache})
             (not (member @post{path} files-to-parse))
             (file-exists? cache-file))
        (post "content" (file->string cache-file))]
       [else
-       (define date @post{date})
-       (print-progress (format "Rendering ~a-~a: ~a" (~a (date-year date)  #:width 4 #:align 'right #:pad-string "0") (~a (date-month date) #:width 2 #:align 'right #:pad-string "0") @post{title}))
+       (print-progress (format "  Rendering ~a" (or (and @post{path} (file-name-from-path @post{path}))
+                                                    @post{title}
+                                                    "{unknown}")))
        
        ; Allow posts to access their own metadata and the site's
        (hash-set! plugins 'post post)
@@ -102,7 +123,7 @@
        
        ; Render the main body of the post
        (pre-render! post site)
-       (post "content" (render (post "content") #:environment plugins #:markdown? #t))
+       (post "content" (render (post "content") #:environment plugins #:markdown? (not @post{disable-markdown})))
        (post-render! post site)
        
        ; Render the template around it
@@ -113,32 +134,18 @@
          #:exists 'replace
          (thunk
            (display @post{content})))])))
-(post-all! posts site)
+
+(site "posts" posts)
+(post-all! site)
+(set! posts (site "posts"))
 
 (printf "Writing posts...\n")
 (system (format "rm -rf '~a'" output-path))
 (make-directory output-path)
 (for ([post (in-list posts)])
   (with-handlers ([exn? (λ (exn) (printf "Could not write '~a': ~a\n" (post "title") (exn-message exn)))])
-    (define (0pad thing width) (~a thing  #:width width #:align 'right #:pad-string "0"))
-    
-    ; Generate the post path
-    (define permalink (or @post{permalink} @site{permalink} "{yymmdd}-{title}"))
-
-    (define-syntax-rule (-> from to)
-      (when (regexp-match from permalink) 
-        ((thunk (set! permalink (string-replace permalink from to))))))
-    
-    (define date @post{date})
-    (-> "{year}"   (0pad (date-year date)  4))
-    (-> "{month}"  (0pad (date-month date) 2))
-    (-> "{day}"    (0pad (date-day date)   2))
-    (-> "{yymmdd}" (string-append (0pad (remainder (date-year date) 100) 2) (0pad (date-month date) 2) (0pad (date-day date) 2)))
-    (-> "{title}"  (slug @post{title}))
-    
-    (define path (build-path output-path permalink))
-    
-    ; Make sure that the directory (y/m/d/slug) exists)
+    ; Make sure that the post's path exists
+    (define path (build-path output-path @post{permalink}))
     (make-directory* path)
     (when @post{files-path}
       (for ([file (in-directory @post{files-path})])

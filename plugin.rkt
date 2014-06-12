@@ -9,13 +9,14 @@
          slug)
 
 (require racket/runtime-path
-         "render.rkt")
+         "render.rkt"
+         "post.rkt")
 
 (define-runtime-path plugin-path "_plugins")
 
 ; Plugins that are called on the entire site before any posts are run
 (define pre-all-listeners (make-hash))
-(define (pre-all! posts site) (for ([(name listener) (in-hash pre-all-listeners)]) (listener posts site)))
+(define (pre-all! site) (for ([(name listener) (in-hash pre-all-listeners)]) (listener site)))
 
 ; Plugins that are called before the renderer has run (content is a ScribbleHTML string)
 (define pre-render-listeners (make-hash))
@@ -27,7 +28,7 @@
 
 ; Plugins that are called on the entire site after any posts are run
 (define post-all-listeners (make-hash))
-(define (post-all! posts site) (for ([(name listener) (in-hash post-all-listeners)]) (listener posts site)))
+(define (post-all! site) (for ([(name listener) (in-hash post-all-listeners)]) (listener site)))
 
 ; Eventually this will be a hash of plugin name -> value
 (define plugins (make-hash))
@@ -62,6 +63,7 @@
       
       (parameterize ([current-namespace (make-base-namespace)])
         (namespace-require 'racket)
+        (namespace-require 'racket/date)
         
         ; Allow plugin files to register themselves
         (eval `(define register-plugin ,register-plugin))
@@ -75,6 +77,9 @@
         
         ; Add the slug plugin
         (eval `(define slug ,slug))
+        
+        ; Allow plugins to make new posts
+        (eval `(define empty-post ,empty-post))
         
         ; Read and evaluate each expression in the plugin file in turn
         (with-input-from-file file

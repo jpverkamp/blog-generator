@@ -37,7 +37,7 @@
   (λ (name function)
     (when (hash-has-key? hash name)
       (error type "Duplicate plugin detected: ~a" name))
-    (printf "  ~a plugin registered: ~a\n" type name)
+    (printf "~a (~a) " name type)
     (hash-set! hash name function)))
 
 (define register-plugin             (make-plugin-function 'in-line     plugins))
@@ -46,12 +46,18 @@
 (define register-post-render-plugin (make-plugin-function 'post-render post-render-listeners))
 (define register-post-all-plugin    (make-plugin-function 'post-all    post-all-listeners))
 
+; Special case the slug plugin
+(define (slug str)
+  (string-trim (regexp-replace* #px"[^a-z0-9]+" (string-downcase str) "-") "-"))
+
+(register-plugin 'slug slug)
+
 ; Load all racket files in the _plugins directory
 (define (load-plugins)
   (when (not plugins-loaded)
     (for ([file (in-directory plugin-path)]
           #:when (regexp-match #px".rkt$" file))
-      (printf "~a:\n" file)
+      (printf "  ~a: " (file-name-from-path file))
       
       (parameterize ([current-namespace (make-base-namespace)])
         (namespace-require 'racket)
@@ -66,10 +72,15 @@
         ; Allow plugins access to the rendering function
         (eval `(define render ,render))
         
+        ; Add the slug plugin
+        (eval `(define slug ,slug))
+        
         ; Read and evaluate each expression in the plugin file in turn
         (with-input-from-file file
           (thunk
            (define sexp `(let () ,@(for/list ([sexp (in-list (port->list))]) sexp)))
-           (eval sexp)))))
+           (eval sexp))))
+      
+      (newline))
     
     (set! plugins-loaded #t)))

@@ -12,6 +12,16 @@
   <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css" />
   <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
 
+	<!-- fix for clickable dropdowns -->
+	<style>
+		.dropdown:hover .dropdown-menu {
+			display: block;
+		}
+		.dropdown-menu {
+			margin-top: 0px;
+		}
+	</style>
+
 	<!-- Using Highlight.js under BSD-3 -->
 	<link rel="stylesheet" href="/highlight/styles/tomorrow-night.css" />
 	<script src="/highlight/highlight.pack.js"></script>

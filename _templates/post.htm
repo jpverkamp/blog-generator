@@ -39,9 +39,11 @@
 	<article class="container">
 		<header>
 			<h1 class="entry-title">@post{title}</h1>
+			@(if @post{date} @string-append{
 			<div class="entry-meta">
 				<span>Posted </span><time class="entry-date" datetime="@date->string[@post{date}]" pubdate>@date->string[@post{date}]</time>
 			</div>
+			} "")
 		</header>
 		<div class="entry-content">
 			@post{content}

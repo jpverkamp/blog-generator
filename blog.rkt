@@ -23,19 +23,6 @@
         (set! current-progress new-progress)
         (displayln current-progress)))))
 
-(define (slugify str)
-  (regexp-replace
-   #px"--+"
-   (list->string
-    (for/list ([c (in-string (string-downcase str))])
-      (cond
-        [(or (char-alphabetic? c)
-             (char-numeric? c)
-             (member c '(#\.)))
-         c]
-        [else #\-])))
-   "-"))
-
 (printf "Loading site config...\n")
 (define site
   (if (file-exists? config-file)
@@ -133,15 +120,23 @@
 (make-directory output-path)
 (for ([post (in-list posts)])
   (with-handlers ([exn? (λ (exn) (printf "Could not write '~a': ~a\n" (post "title") (exn-message exn)))])
-    ; Use the date to generate the post path
-    ; TODO: This should be configurable
+    (define (0pad thing width) (~a thing  #:width width #:align 'right #:pad-string "0"))
+    
+    ; Generate the post path
+    (define permalink (or @post{permalink} @site{permalink} "{yymmdd}-{title}"))
+
+    (define-syntax-rule (-> from to)
+      (when (regexp-match from permalink) 
+        ((thunk (set! permalink (string-replace permalink from to))))))
+    
     (define date @post{date})
-    (define path 
-      (build-path output-path
-                  (~a (date-year date)  #:width 4 #:align 'right #:pad-string "0")
-                  (~a (date-month date) #:width 2 #:align 'right #:pad-string "0")
-                  (~a (date-day date)   #:width 2 #:align 'right #:pad-string "0")
-                  (slugify @post{title})))
+    (-> "{year}"   (0pad (date-year date)  4))
+    (-> "{month}"  (0pad (date-month date) 2))
+    (-> "{day}"    (0pad (date-day date)   2))
+    (-> "{yymmdd}" (string-append (0pad (remainder (date-year date) 100) 2) (0pad (date-month date) 2) (0pad (date-day date) 2)))
+    (-> "{title}"  (slug @post{title}))
+    
+    (define path (build-path output-path permalink))
     
     ; Make sure that the directory (y/m/d/slug) exists)
     (make-directory* path)

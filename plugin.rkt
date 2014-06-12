@@ -5,7 +5,8 @@
          pre-all!
          pre-render!
          post-render!
-         post-all!)
+         post-all!
+         slug)
 
 (require racket/runtime-path
          "render.rkt")

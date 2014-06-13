@@ -104,7 +104,7 @@
           `())
     (h2 "Posts")
     (ul ,@(for/list ([post (in-list sorted-post-list)])
-            `(li (a ((href ,(string-append (or (site-ref "url") "/") (post "permalink")))) ,(post "title")))))))
+            `(li (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title")))))))
 
 (register-plugin 'generate-category-listing generate-category-listing)
 

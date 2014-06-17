@@ -32,6 +32,19 @@
 	<!-- Using MathJax under Apache-2 -->
 	<script src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
+	<!-- JSFlickrGallery -->
+	<script type="text/javascript" src="/js-flickr-gallery/js/js-flickr-gallery.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="/js-flickr-gallery/css/js-flickr-gallery.css" />
+	<script type="text/javascript">
+		$(function() {
+			$('div.flickr-gallery').jsFlickrGallery({
+				'structure': {
+					'ulClass': 'list-inline thumbnails',
+				},
+			});
+		});
+	</script>
+
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body>

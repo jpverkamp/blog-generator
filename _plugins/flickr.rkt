@@ -1,5 +1,7 @@
 (define (flickr-gallery id)
-  `(div (span ,(format "TODO: flickr-gallery for ~a" id))))
+  `(div ((class "flickr-gallery")
+         (data-set-id ,(~a id))
+         (data-per-page "30"))))
 
 (register-plugin 'flickr-gallery flickr-gallery)
 

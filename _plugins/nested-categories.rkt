@@ -96,18 +96,20 @@
        [else post-list])))
   
   `(div
-    ,@(if parent-cateogry
-          `((h2 "Parent category")
-            (ul (li (a ((href "..")) ,parent-cateogry))))
-          `())
-    ,@(if (> (hash-count cathash) 1)
-          `((h2 "Subcategories")
-            (ul ,@(for/list ([subcat (in-list (sort (filter string? (hash-keys cathash)) string<?))])
-                    `(li (a ((href ,(slug subcat))) ,subcat)))))
-          `())
+    (ul ((class "list-inline"))
+        ,@(if parent-cateogry
+              `((li "[↑ " (a ((href "..")) ,parent-cateogry) "]"))
+              `())
+        ,@(if (> (hash-count cathash) 1)
+              (for/list ([subcat (in-list (sort (filter string? (hash-keys cathash)) string<?))])
+                `(li "[" (a ((href ,(slug subcat))) ,subcat) "]"))
+              `()))
     (h2 "Posts")
-    (ul ,@(for/list ([post (in-list sorted-post-list)])
-            `(li (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title")))))))
+    ,(parameterize ([date-display-format 'iso-8601])
+       `(ul ((class "list-unstyled"))
+            ,@(for/list ([post (in-list sorted-post-list)])
+                `(li "[" ,(date->string (post "date")) "] "
+                     (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title"))))))))
 
 (register-plugin 'generate-category-listing generate-category-listing)
 

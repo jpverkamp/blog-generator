@@ -155,3 +155,6 @@
     (with-output-to-file (build-path path "index.htm")
       (thunk
        (display @post{content})))))
+
+(printf "Copying static content...\n")
+(system "cp -r _static/* _build/")

@@ -107,6 +107,7 @@
       (parameterize ([current-namespace (make-base-namespace)])
         (namespace-require 'racket)
         (namespace-require 'racket/date)
+        (namespace-require 'racket/list)
         
         ; Allow plugin files to register themselves
         (eval `(define register-plugin ,register-plugin))

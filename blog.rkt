@@ -105,13 +105,19 @@
   (with-handlers ([exn:fail? (λ (err) (printf "Failed in '~a': ~a\n" (post "title") (exn-message err)))])
     ; Check if we already have a cached version of the post (if we're not bypassing the cache)
     ; Any files passed on the command line are always reprocessed (although state dependent pages may only partially work)
-    (define cache-file (build-path cache-path (sha1 (open-input-string (~a post)))))
+    (define cache-hash (sha1 (open-input-string (~a post))))
+    (define cache-file (build-path cache-path (string-append cache-hash ".cache")))
+    (define cache-file-more (build-path cache-path (string-append cache-hash ".more")))
     (cond
       [(and (not @post{do-not-cache})
             (not @site{bypass-cache})
             (not (member @post{path} files-to-parse))
             (file-exists? cache-file))
-       (post "content" (file->string cache-file))]
+       (post "content" (file->string cache-file))
+       (post "more" 
+             (if (file-exists? cache-file-more) 
+                 (file->string cache-file-more)
+                 (post "content")))]
       [else
        (print-progress (format "  Rendering ~a" (or (and @post{path} (file-name-from-path @post{path}))
                                                     @post{title}
@@ -121,19 +127,28 @@
        (hash-set! plugins 'post post)
        (hash-set! plugins 'site site)
        
+       (post "content" (regexp-replace* "<!--more-->" (post "content") "☃MORE☃")) ; HACK to avoid markdown removing comments
+       
        ; Render the main body of the post
        (pre-render! post site)
        (post "content" (render (post "content") #:environment plugins #:markdown? (not @post{disable-markdown})))
        (post-render! post site)
        
-       ; Render the template around it
+       (post "content" (regexp-replace* "☃MORE☃" (post "content") "<!--more-->")) ; HACK to avoid markdown removing comments
+       
+       ; Split the section above <!--more-->
+       (cond
+         [(regexp-match #px"<!--more-->" (post "content"))
+          (post "more" (car (string-split (post "content") "<!--more-->")))
+          (with-output-to-file cache-file-more #:exists 'replace (thunk (display @post{more})))]
+         [else
+          (post "more" (post "content"))])
+       
+       ; Render the template around the content
        (post "content" (render-template (post "template" #:default "post")))
        
        ; Update the cache file
-       (with-output-to-file cache-file
-         #:exists 'replace
-         (thunk
-           (display @post{content})))])))
+       (with-output-to-file cache-file #:exists 'replace (thunk (display @post{content})))])))
 
 (site "posts" posts)
 (post-all! site)

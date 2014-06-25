@@ -5,8 +5,21 @@
 (require (only-in markdown parse-markdown)
          scribble/reader
          sxml/html
-         xml
+         (except-in xml xexpr->string)
          "post.rkt")
+
+; Simplified version of xexpr->string that doesn't encode html entities O:)
+(define (xexpr->string thing)
+  (match thing
+    [`(,tag ((,key* ,value*) ...) ,body* ...)
+     (define attrs (string-join (map (λ (key value) (format "~a=\"~a\"" key value)) key* value*) " "))
+     (define str-body (apply string-append (map xexpr->string body*)))
+     (string-append "<" (~a tag) (if (equal? attrs "") "" " ") attrs ">" str-body "</" (~a tag) ">")]
+    [`(,tag ,body* ...)
+     (define str-body (apply string-append (map xexpr->string body*)))
+     (string-append "<" (~a tag) ">" str-body "</" (~a tag) ">")]
+    [any
+     (~a any)]))
 
 ; Create only one namespace per run
 ; TODO: Do we need to do this?
@@ -21,19 +34,10 @@
 ; Turn anything into a string (xexprs that are elements get parsed, everything else is ~a'd)
 (define (stringify thing)
   (match thing
-    [(? void?)
-     ""]
-    [(? string?)
-     thing]
-    
-    ; Ugly hacks to prevent <pre><code> from escaping inner tag
-    [`(pre (,param*) . ,(? (listof string?) body*)) (string-replace (xexpr->string `(pre (,param*) "{UGLYHACK}")) "{UGLYHACK}" (apply string-append body*))]
-    [`(pre . ,(? (listof string?) body*))           (string-replace (xexpr->string `(pre "{UGLYHACK}")) "{UGLYHACK}" (apply string-append body*))]
-    
-    [(and (? list?) (? xexpr?))
-     (xexpr->string thing)]
-    [any
-     (~a thing)]))
+    [(? void?)                  ""]
+    [(? string?)                thing]
+    [(and (? list?) (? xexpr?)) (xexpr->string thing)]
+    [any                        (~a thing)]))
 
 ; Process all chunks, evaluating at-expressions and turning everything else into a string
 (define (run-at-exps ls)

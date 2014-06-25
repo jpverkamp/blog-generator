@@ -108,6 +108,7 @@
         (namespace-require 'racket)
         (namespace-require 'racket/date)
         (namespace-require 'racket/list)
+        (namespace-require 'xml)
         
         ; Allow plugin files to register themselves
         (eval `(define register-plugin ,register-plugin))
@@ -117,7 +118,11 @@
         (eval `(define register-post-all-plugin ,register-post-all-plugin))
         
         ; Allow plugins access to the rendering function
-        (eval `(define render ,render))
+        ; Set a default environment to the other plugins so they can nest
+        (define (plugin-render to-render #:environment [env (hash)] #:markdown? [markdown? #f])
+          (define plugins+env (for/fold ([env (hash-copy plugins)]) ([(k v) (in-hash env)]) (hash-set env k v)))
+          (render to-render #:environment plugins+env #:markdown? markdown?))
+        (eval `(define render ,plugin-render))
         
         ; Add the slug plugin
         (eval `(define slug ,slug))

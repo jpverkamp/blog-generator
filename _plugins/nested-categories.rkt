@@ -1,3 +1,6 @@
+(include "_plugins/published-on.rkt")
+(include "_plugins/tag-list.rkt")
+
 (define site-ref #f)
 (define categories #f)
 
@@ -153,18 +156,21 @@
     `(ul ((class "list-unstyled"))
          ,@(for/list ([post (in-list final-post-list)]
                       [i (in-naturals)])
-             `(li 
-               ,@(cond
-                   [(or (eq? include-post #t)
-                        (and (number? include-post)
-                             (< i include-post)))
-                    `((h1 ((class "entry-title")) (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title")))
-                      (span ((class "posted-on")) "[" ,(date->string (post "date")) "]")
-                      (div ,(post "more"))
-                      (hr))]
-                   [else
-                    `((span ((class "posted-on")) "[" ,(date->string (post "date")) "] ")
-                      (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title")))]))))))
+             (cond
+               [(or (eq? include-post #t)
+                    (and (number? include-post)
+                         (< i include-post)))
+                `(li ((class "post-preview"))
+                     (header
+                      (h1 ((class "entry-title")) (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title")))
+                      (div ((class "entry-meta"))
+                           ,(published-on (post "date"))
+                           ,(tag-list (post "tags"))))
+                     (div ((class "preview")) ,(post "more"))
+                     (hr))]
+               [else
+                `(li ((class "post-listing"))
+                     (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title")))])))))
 
 (register-plugin 'post-list post-list)
 

@@ -145,7 +145,7 @@
           (post "more" (post "content"))])
        
        ; Render the template around the content
-       (post "content" (render-template (post "template" #:default "post")))
+       (post "content" (render-template (post "template" #:default "post") #:environment plugins))
        
        ; Update the cache file
        (with-output-to-file cache-file #:exists 'replace (thunk (display @post{content})))])))

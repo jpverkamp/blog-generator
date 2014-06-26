@@ -77,7 +77,7 @@
 (define (make-plugin-function type hash)
   (λ (name function #:before [before #f] #:after [after #f])
     (when (hash-has-key? hash name)
-      (error type "Duplicate plugin detected: ~a" name))
+      (printf "{duplicate plugin: ~a} " name))
     
     (when before (hash-set! plugins-before name (if (list? before) before (list before))))
     (when after (hash-set! plugins-after name (if (list? after) after (list after))))

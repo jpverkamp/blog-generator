@@ -1,0 +1,34 @@
+/* Make Bootstrap dropdown menus display on hover and clickable */
+.dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown-menu {
+  margin-top: 0px;
+}
+
+
+.post-preview header {
+  margin-bottom: 0.5em;
+}
+
+/* Give the articles a bit of flavor */
+article {
+  border: 1px solid black;
+  border-radius: 5px;
+  box-shadow: 5px 5px 2px #888888;
+}
+
+/* Make sure the footer can be read even with the above box shadow */
+footer {
+  margin: 1em;
+}
+
+/* I like small caps, so sue me :) */
+h1.entry-title {
+  font-variant: small-caps;
+}
+
+.entry-date {
+  font-variant: small-caps;
+}

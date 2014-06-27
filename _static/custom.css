@@ -12,6 +12,11 @@
   margin-bottom: 0.5em;
 }
 
+/* Make Bootstrap nav-justified non-overlapping */
+.nav-justified > li {
+  float: none;
+}
+
 /* Give the articles a bit of flavor */
 article {
   border: 1px solid black;

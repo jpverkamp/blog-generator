@@ -153,6 +153,7 @@
   
   ; Posts within this category or subcategories
   (parameterize ([date-display-format 'iso-8601])
+    (define last-date-chunk #f)
     `(ul ((class "list-unstyled"))
          ,@(for/list ([post (in-list final-post-list)]
                       [i (in-naturals)])
@@ -164,12 +165,17 @@
                      (header
                       (h1 ((class "entry-title")) (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title")))
                       (div ((class "entry-meta"))
-                           ,(published-on (post "date"))
-                           ,(tag-list (post "tags"))))
+                           ,(published-on (post "date"))))
                      (div ((class "preview")) ,(post "more"))
                      (hr))]
                [else
+                (define date-chunk (and (post "date") (format "~a ~a" (vector-ref '#(#f "Jan" "Feb" "Mar" "Apr" "May" "June" "July" "Aug" "Sept" "Oct" "Nov" "Dec") (date-month (post "date"))) (date-year (post "date")))))
                 `(li ((class "post-listing"))
+                     ,@(cond
+                         [(or (not date-chunk) (equal? last-date-chunk date-chunk)) `()]
+                         [else
+                          (set! last-date-chunk date-chunk)
+                          `((h3 ,date-chunk))])
                      (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title")))])))))
 
 (register-plugin 'post-list post-list)

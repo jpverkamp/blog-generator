@@ -137,12 +137,9 @@
        (post "content" (regexp-replace* "☃MORE☃" (post "content") "<!--more-->")) ; HACK to avoid markdown removing comments
        
        ; Split the section above <!--more-->
-       (cond
-         [(regexp-match #px"<!--more-->" (post "content"))
-          (post "more" (car (string-split (post "content") "<!--more-->")))
-          (with-output-to-file cache-file-more #:exists 'replace (thunk (display @post{more})))]
-         [else
-          (post "more" (post "content"))])
+       ; If that doesn't exist, the entire post becomes the more section
+       (post "more" (car (string-split (post "content") "<!--more-->")))
+       (with-output-to-file cache-file-more #:exists 'replace (thunk (display @post{more})))
        
        ; Render the template around the content
        (post "content" (render-template (post "template" #:default "post") #:environment plugins))

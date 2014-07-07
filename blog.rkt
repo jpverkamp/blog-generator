@@ -36,7 +36,7 @@
    #:once-each 
    [("--bypass-cache") "Regenerate all pages, ignoring currently cached versions" (site "bypass-cache" #t)]
    #:args files
-   (map (λ (file) (path->string (path->complete-path (string->path file)))) files)))
+   (map (λ (file) (regexp-replace* #px"\\\\+" (path->string (path->complete-path (string->path file))) "/")) files)))
 
 (printf "Loading plugins...\n")
 (load-plugins)
@@ -45,7 +45,7 @@
 (define templates
   (for/hash ([path (in-directory templates-path)]
              #:when (regexp-match #px"\\.html?$" path))
-    (values (regexp-replace #px"\\.[^.]*$" (path->string (file-name-from-path path)) "")
+    (values (regexp-replace* #px"\\.[^.]*$" (path->string (file-name-from-path path)) "")
             (file->string path))))
 
 (define (render-template name #:environment [environment (hash)])
@@ -63,7 +63,7 @@
     
     (new-post "path" (path->string path))
     
-    (define attachment-path (regexp-replace #px"\\.htm" (path->string path) ""))
+    (define attachment-path (regexp-replace* #px"\\.htm$" (path->string path) ""))
     (when (directory-exists? attachment-path)
       (new-post "files-path" attachment-path))
     
@@ -103,6 +103,10 @@
 
 (for ([post (in-list posts)])
   (with-handlers ([exn:fail? (λ (err) (printf "Failed in '~a': ~a\n" (post "title") (exn-message err)))])
+    ; Fix for Cygwin style paths on Windows, make them always Unix style
+    (define system-agnostic-path
+      (and @post{path} (regexp-replace* #px"\\\\+" (path->string (path->complete-path @post{path})) "/")))
+
     ; Check if we already have a cached version of the post (if we're not bypassing the cache)
     ; Any files passed on the command line are always reprocessed (although state dependent pages may only partially work)
     (define cache-hash (sha1 (open-input-string (~a post))))
@@ -111,7 +115,7 @@
     (cond
       [(and (not @post{do-not-cache})
             (not @site{bypass-cache})
-            (not (member @post{path} files-to-parse))
+            (not (member system-agnostic-path files-to-parse))
             (file-exists? cache-file))
        (post "content" (file->string cache-file))
        (post "more" 

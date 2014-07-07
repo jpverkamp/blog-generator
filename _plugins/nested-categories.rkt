@@ -163,7 +163,7 @@
                          (< i include-post)))
                 `(li ((class "post-preview"))
                      (header
-                      (h1 ((class "entry-title")) (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title")))
+                      (h2 ((class "entry-title")) (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title")))
                       (div ((class "entry-meta"))
                            ,(published-on (post "date"))))
                      (div ((class "preview")) ,(post "more"))

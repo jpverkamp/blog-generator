@@ -1,3 +1,8 @@
+/* I like green */
+a         { color: #00bf00; }
+a:hover   { color: #00ff00; }
+a:visited { color: #008000; }
+
 /* Make Bootstrap dropdown menus display on hover and clickable */
 .dropdown:hover .dropdown-menu {
   display: block;
@@ -36,4 +41,9 @@ h1.entry-title {
 
 .entry-date {
   font-variant: small-caps;
+}
+
+/* Don't let floats get past hrs (mostly for images in post previews) */
+hr {
+  clear: both;
 }

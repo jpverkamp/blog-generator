@@ -20,13 +20,13 @@
           (hash-ref! h part (make-hash))))
       (hash-set! last-hash '*posts* (set-add (hash-ref last-hash '*posts* (set)) post))))
   
-  ; Generate a page for each subcategory
+  ; Generate a page for each subcategory along with an atom feed for each
   (let loop ([h categories] [path "/"] [name #f])
     (when name
+      ; Basic post
       (define new-post (empty-post))
       (new-post "title" name)
       (new-post "do-not-cache" #t)
-      (new-post "template" "category-list")
       (new-post "permalink" (string-join (cons "category" (map slug (string-split path "/"))) "/"))
       (new-post "template" "post")
       (new-post "content" "
@@ -36,7 +36,18 @@
 @post-list['include-post 5]{@post{category}}")
       
       (new-post "category" path)
-      (site "posts" (snoc new-post (site "posts"))))
+      (site "posts" (snoc new-post (site "posts")))
+      
+      ; Atom feed
+      (define atom-post (empty-post))
+      (atom-post "title" (~a name " Feed"))
+      (atom-post "do-not-cache" #t)
+      (atom-post "template" "_blank")
+      (atom-post "permalink" (~a (string-join (cons "category" (map slug (string-split path "/"))) "/") "/feed"))
+      (atom-post "content" "<?xml version=\"1.0\" encoding=\"utf-8\"?>
+@generate-atom[@site @post{category}]")
+      (atom-post "category" path)
+      (site "posts" (snoc atom-post (site "posts"))))
     
     (for ([category (in-list (hash-keys h))] #:when (string? category))
       (loop (hash-ref h category (hash))

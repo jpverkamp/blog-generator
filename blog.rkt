@@ -49,8 +49,14 @@
             (file->string path))))
 
 (define (render-template name #:environment [environment (hash)])
-  (define template (hash-ref templates name (format "missing template: ~a" name)))
-  (render template #:environment environment))
+  (cond 
+    [(equal? name "_blank")
+     (render "@post{content}" #:environment environment)]
+    [(hash-ref templates name #f)
+     => (λ (template)
+          (render template #:environment environment))]
+    [else
+     (format "missing template: ~a" name)]))
 
 (hash-set! plugins 'render-template render-template)
 

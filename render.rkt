@@ -55,7 +55,7 @@
                                "hr" "noscript" "ol" "output" "p" "pre" "section" "table"
                                "tfoot" "ul" "video")
                          "|")
-            ")>")))
+            ").*?>")))
 
 (define (add-paragraphs str)
   (with-input-from-string str
@@ -71,7 +71,7 @@
              output]
             [else
              (cons (string-append "<p>" 
-                                  (apply string-append (reverse new-buffer))
+                                  (string-join (map string-trim (reverse new-buffer)) " ")
                                   "</p>")
                    output)]))
 
@@ -96,6 +96,9 @@
           [(not (null? match-stack))
            (loop (cons line output) '() match-stack)]
           
+          ; Do not paragraphize <!--more-->
+          [(equal? "<!--more-->" line)
+           (loop (cons line (buffer->output)) '() match-stack)]
           ; Empty lines end the current buffer
           [(equal? "" (string-trim line))
            (loop (buffer->output) '() match-stack)]
@@ -105,8 +108,8 @@
                 (define tag (cadr match))
                 (loop (cons line (buffer->output))
                       '()
-                      (cons (cons (pregexp (string-append "<" tag ">"))
-                                  (pregexp (string-append "</" tag ">")))
+                      (cons (cons (pregexp (string-append "<" tag ".*?>"))
+                                  (pregexp (string-append "</" tag ".*?>")))
                             match-stack)))]
           ; Anything else gets added to the buffer
           [else
@@ -121,11 +124,11 @@
   (regexp-replace* #px"\n\n+" str "\n\n"))
 
 ; Parse a string or port containing xexprs
-(define (render to-render #:environment [env (hash)] #:add-paragraphs [add-paragraphs #f])
+(define (render to-render #:environment [env (hash)] #:add-paragraphs [add-paragraphs? #f])
   (cond
     ; Strings should be read and parsed
     [(string? to-render)
-     (call-with-input-string to-render (λ (in) (render in #:environment env)))]
+     (call-with-input-string to-render (λ (in) (render in #:environment env #:add-paragraphs add-paragraphs?)))]
     
     ; Run at-expressions then parse as markdown with embedded html
     [(input-port? to-render)
@@ -136,7 +139,7 @@
              (eval `(define ,k ,v))
              (eval `(define ,k ',v))))
        
-       (define maybe-add-paragraphs (if add-paragraphs add-paragraphs identity))
+       (define maybe-add-paragraphs (if add-paragraphs? add-paragraphs identity))
        
        ; Thank you Rackjure...
        (~> to-render
@@ -150,4 +153,4 @@
     ; This will catch at-expressions at the cost of being wicked slow
     ; TODO: Only recur if there is actually an at-expression in the string
     [else
-     (render (stringify to-render) #:environment env)]))
+     (render (stringify to-render) #:environment env #:add-paragraphs add-paragraphs?)]))

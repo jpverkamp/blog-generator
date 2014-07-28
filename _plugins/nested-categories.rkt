@@ -26,7 +26,7 @@
       ; Basic post
       (define new-post (empty-post))
       (new-post "title" name)
-      (new-post "do-not-cache" #t)
+      #;(new-post "do-not-cache" #t)
       (new-post "permalink" (string-join (cons "category" (map slug (string-split path "/"))) "/"))
       (new-post "template" "post")
       (new-post "content" "
@@ -41,7 +41,7 @@
       ; Atom feed
       (define atom-post (empty-post))
       (atom-post "title" (~a name " Feed"))
-      (atom-post "do-not-cache" #t)
+      #;(atom-post "do-not-cache" #t)
       (atom-post "template" "_blank")
       (atom-post "permalink" (~a (string-join (cons "category" (map slug (string-split path "/"))) "/") "/feed"))
       (atom-post "content" "<?xml version=\"1.0\" encoding=\"utf-8\"?>

@@ -52,3 +52,7 @@ hr {
 img {
   max-width: 90%;
 }
+
+pre { 
+  margin: 1em 0;
+}

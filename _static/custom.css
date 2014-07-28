@@ -47,3 +47,8 @@ h1.entry-title {
 hr {
   clear: both;
 }
+
+/* Probably shouldn't do this, but get it working first, fast second */
+img {
+  max-width: 90%;
+}

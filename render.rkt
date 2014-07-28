@@ -45,6 +45,73 @@
    (for/list ([chunk (in-list ls)] #:break (eof-object? chunk))
      (stringify (eval chunk)))))
 
+; Add paragraphs to a mostly html document
+(define re-block
+  (pregexp (string-append 
+            "^\\s*<("
+            (string-join (list "address" "article" "aside" "audio" "blockquote" "canvas"
+                               "dd" "div" "dl" "fieldset" "figcaption" "figure" "footer"
+                               "form" "h1" "h2" "h3" "h4" "h5" "h6" "header" "hgroup" 
+                               "hr" "noscript" "ol" "output" "p" "pre" "section" "table"
+                               "tfoot" "ul" "video")
+                         "|")
+            ")>")))
+
+(define (add-paragraphs str)
+  (with-input-from-string str
+    (λ ()
+      (let loop ([output '()]
+                 [buffer '()]
+                 [match-stack '()])
+        ; Loop while moving the buffer to output as a paragraph
+        (define (buffer->output [last-line #f])
+          (define new-buffer (if last-line (cons last-line buffer) buffer))
+          (cond
+            [(null? new-buffer)
+             output]
+            [else
+             (cons (string-append "<p>" 
+                                  (apply string-append (reverse new-buffer))
+                                  "</p>")
+                   output)]))
+
+        (define line (read-line))
+        
+        (cond
+          ; At the end, put the strings back together
+          ; Output buffer one last time if necessary
+          [(eof-object? line)
+           (string-join (reverse (buffer->output)) "\n")]
+          
+          ; If we currently have a match stack, check for that first
+          ; If we close a tag, take it off
+          [(and (not (null? match-stack))
+                (regexp-match (cdar match-stack) line))
+           (loop (cons line (buffer->output)) '() (cdr match-stack))]
+          ; If we open a nested tag, add another copy to the stack
+          [(and (not (null? match-stack))
+                (regexp-match (caar match-stack) line))
+           (loop (cons line (buffer->output)) '() (cons (car match-stack) match-stack))]
+          ; If we still have a stack, add directly to output
+          [(not (null? match-stack))
+           (loop (cons line output) '() match-stack)]
+          
+          ; Empty lines end the current buffer
+          [(equal? "" (string-trim line))
+           (loop (buffer->output) '() match-stack)]
+          ; Opening block level tags 
+          [(regexp-match re-block line)
+           => (λ (match)
+                (define tag (cadr match))
+                (loop (cons line (buffer->output))
+                      '()
+                      (cons (cons (pregexp (string-append "<" tag ">"))
+                                  (pregexp (string-append "</" tag ">")))
+                            match-stack)))]
+          ; Anything else gets added to the buffer
+          [else
+           (loop output (cons line buffer) match-stack)])))))
+
 ; Flatten a mixed list of strings and x-expressions to an html string
 (define (flatten-to-html ls)
   (string-join (map stringify ls) "\n"))
@@ -54,11 +121,11 @@
   (regexp-replace* #px"\n\n+" str "\n\n"))
 
 ; Parse a string or port containing xexprs
-(define (render to-render #:environment [env (hash)] #:markdown? [markdown? #f])
+(define (render to-render #:environment [env (hash)] #:add-paragraphs [add-paragraphs #f])
   (cond
     ; Strings should be read and parsed
     [(string? to-render)
-     (call-with-input-string to-render (λ (in) (render in #:environment env #:markdown? markdown?)))]
+     (call-with-input-string to-render (λ (in) (render in #:environment env)))]
     
     ; Run at-expressions then parse as markdown with embedded html
     [(input-port? to-render)
@@ -69,25 +136,18 @@
              (eval `(define ,k ,v))
              (eval `(define ,k ',v))))
        
+       (define maybe-add-paragraphs (if add-paragraphs add-paragraphs identity))
+       
        ; Thank you Rackjure...
-       (cond
-         [markdown?
-          (~> to-render
-              read-inside
-              run-at-exps
-              parse-markdown
-              flatten-to-html
-              string-trim
-              strip-excess-whitespace)]
-         [else
-          (~> to-render
-              read-inside
-              run-at-exps
-              string-trim
-              strip-excess-whitespace)]))]
+       (~> to-render
+           read-inside
+           run-at-exps
+           maybe-add-paragraphs
+           string-trim
+           strip-excess-whitespace))]
     
     ; Non-string xexprs should be stringed, then parsed
     ; This will catch at-expressions at the cost of being wicked slow
     ; TODO: Only recur if there is actually an at-expression in the string
     [else
-     (render (stringify to-render) #:environment env #:markdown? markdown?)])) 
+     (render (stringify to-render) #:environment env)]))

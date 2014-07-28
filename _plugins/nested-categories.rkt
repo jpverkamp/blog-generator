@@ -26,7 +26,6 @@
       (define new-post (empty-post))
       (new-post "title" name)
       (new-post "do-not-cache" #t)
-      (new-post "disable-markdown" #t)
       (new-post "template" "category-list")
       (new-post "permalink" (string-join (cons "category" (map slug (string-split path "/"))) "/"))
       (new-post "template" "post")

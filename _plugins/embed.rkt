@@ -16,7 +16,7 @@
   (cond
     [(regexp-match #px"\\.(png|jpg|jpeg|gif)$" src)
      `(a ((href ,absolute-path) ,@(if classes `((class classes)) `())) 
-         (img ((src ,absolute-path))))]
+         (img ((class "thumbnail") (src ,absolute-path))))]
     [else
      `(a ((href ,absolute-path) ,@(if classes `((class classes)) `()))
          ,src)]))

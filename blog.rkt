@@ -50,7 +50,7 @@
 
 (define (render-template name #:environment [environment (hash)])
   (define template (hash-ref templates name (format "missing template: ~a" name)))
-  (render template #:environment environment #:markdown? #f))
+  (render template #:environment environment))
 
 (hash-set! plugins 'render-template render-template)
 
@@ -131,14 +131,10 @@
        (hash-set! plugins 'post post)
        (hash-set! plugins 'site site)
        
-       (post "content" (regexp-replace* "<!--more-->" (post "content") "☃MORE☃")) ; HACK to avoid markdown removing comments
-       
        ; Render the main body of the post
        (pre-render! post site)
-       (post "content" (render (post "content") #:environment plugins #:markdown? (not @post{disable-markdown})))
+       (post "content" (render (post "content") #:environment plugins #:add-paragraphs #t))
        (post-render! post site)
-       
-       (post "content" (regexp-replace* "☃MORE☃" (post "content") "<!--more-->")) ; HACK to avoid markdown removing comments
        
        ; Split the section above <!--more-->
        ; If that doesn't exist, the entire post becomes the more section

@@ -6,3 +6,5 @@ s3-url: http://com.jverkamp.blog.s3-website-us-west-1.amazonaws.com
 permalink: "{year}/{month}/{day}/{title}"
 
 atom-posts: 10
+
+disqus-shortname: jverkamp

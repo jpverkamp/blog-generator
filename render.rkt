@@ -55,7 +55,7 @@
                                "hr" "noscript" "ol" "output" "p" "pre" "section" "table"
                                "tfoot" "ul" "video")
                          "|")
-            ").*?>")))
+            ")[^/>]*>")))
 
 (define (add-paragraphs str)
   (with-input-from-string str
@@ -106,11 +106,17 @@
           [(regexp-match re-block line)
            => (λ (match)
                 (define tag (cadr match))
-                (loop (cons line (buffer->output))
-                      '()
-                      (cons (cons (pregexp (string-append "<" tag ".*?>"))
-                                  (pregexp (string-append "</" tag ".*?>")))
-                            match-stack)))]
+                (cond
+                  ; We match the end as well
+                  [(regexp-match (pregexp (~a "</" tag ".*?>")) line)
+                   (loop (cons line (buffer->output)) '() match-stack)]
+                  ; Nope, add to the stack
+                  [else
+                   (loop (cons line (buffer->output))
+                         '()
+                         (cons (cons (pregexp (~a "<" tag ".*?>"))
+                                     (pregexp (~a "</" tag ".*?>")))
+                               match-stack))]))]
           ; Anything else gets added to the buffer
           [else
            (loop output (cons line buffer) match-stack)])))))

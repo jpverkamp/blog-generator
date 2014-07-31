@@ -17,6 +17,6 @@ var disqus_url = '~a';
 <a href=\"http://disqus.com\" class=\"dsq-brlink\">comments powered by <span class=\"logo-disqus\">Disqus</span></a>" 
    (or (site "disqus-shortname") (site "url"))
    (post "title")
-   (~a (site "url") "/" (post "permalink") "/"))))
+   (~a #;(site "url") "http://blog.jverkamp.com" "/" (post "permalink") "/"))))
 
 (register-plugin 'disqus disqus)

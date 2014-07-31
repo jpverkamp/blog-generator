@@ -51,6 +51,10 @@ hr {
 /* Probably shouldn't do this, but get it working first, fast second */
 img {
   max-width: 90%;
+  padding: 4px;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
 pre { 

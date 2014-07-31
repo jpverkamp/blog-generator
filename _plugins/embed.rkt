@@ -15,8 +15,8 @@
   (define absolute-path (~a (or (my-site "url") "/") "/" (or (my-post "permalink") ".") "/" src))
   (cond
     [(regexp-match #px"\\.(png|jpg|jpeg|gif)$" src)
-     `(a ((href ,absolute-path) ,@(if classes `((class classes)) `())) 
-         (img ((class "thumbnail") (src ,absolute-path))))]
+     `(a ((data-toggle "lightbox") (href ,absolute-path) ,@(if classes `((class classes)) `())) 
+         (img ((src ,absolute-path))))]
     [else
      `(a ((href ,absolute-path) ,@(if classes `((class classes)) `()))
          ,src)]))

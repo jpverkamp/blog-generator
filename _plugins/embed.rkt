@@ -1,6 +1,3 @@
-(define my-site #f)
-(define my-post #f)
-
 (define (embed . args)
   (define classes 
     (cond
@@ -12,7 +9,7 @@
   (define src
     (last args))
   
-  (define absolute-path (~a (or (my-site "url") "/") "/" (or (my-post "permalink") ".") "/" src))
+  (define absolute-path (~a (or (site "url") "/") "/" (or (post "permalink") ".") "/" src))
   (cond
     [(regexp-match #px"\\.(png|jpg|jpeg|gif)$" src)
      `(a ((data-toggle "lightbox") (href ,absolute-path) ,@(if classes `((class ,classes)) `())) 
@@ -20,11 +17,5 @@
     [else
      `(a ((href ,absolute-path) ,@(if classes `((class ,classes)) `()))
          ,src)]))
-
-(register-pre-render-plugin 
- 'embed-get-post
- (λ (post site) 
-   (set! my-post post)
-   (set! my-site site)))
    
 (register-plugin 'embed embed)

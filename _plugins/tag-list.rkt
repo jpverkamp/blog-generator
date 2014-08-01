@@ -1,8 +1,4 @@
-(define my-site #f)
-
 (define (add-tags site)
-  (set! my-site site)
-  
   ; Add tags for primary and last posts
   (for ([post (in-list (site "posts"))] #:when (post "categories"))
     (for ([category (in-list (post "categories"))])
@@ -28,10 +24,10 @@
      [(? hash?)
       `(ul ((class "tag-list list-inline"))
            ,@(for/list ([(tag permalink) (in-hash tags)])
-               `(li (a ((href ,(string-append (or (my-site "url") "") "/" permalink))) ,tag))))]
+               `(li (a ((href ,(string-append (or (site "url") "") "/" permalink))) ,tag))))]
      [(? list?)
       `(ul ((class "tag-list list-inline"))
            ,@(for/list ([tag (in-list tags)])
-               `(li (a ((href ,(string-append (or (my-site "url") "") "/tag/" (slug tag)))) ,tag))))])))
+               `(li (a ((href ,(string-append (or (site "url") "") "/tag/" (slug tag)))) ,tag))))])))
 
 (register-plugin 'tag-list tag-list)  

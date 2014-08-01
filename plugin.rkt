@@ -14,6 +14,12 @@
 
 (define-runtime-path plugin-path "_plugins")
 
+(define current-site #f)
+(define current-post #f)
+
+(define (current-site-wrapper . args) (apply current-site args))
+(define (current-post-wrapper . args) (apply current-post args))
+
 ; Store any ordering requests for plugins
 (define plugins-before (make-hash))
 (define plugins-after (make-hash))
@@ -47,9 +53,12 @@
    
   (if global
       (λ (site)
+        (set! current-site site)
         (for ([name (in-list (sorted-plugins (hash-keys hash)))])
           ((hash-ref hash name) site)))
       (λ (post site)
+        (set! current-site site)
+        (set! current-post post)
         (for ([name (in-list (sorted-plugins (hash-keys hash)))])
           ((hash-ref hash name) post site)))))
 
@@ -129,6 +138,10 @@
         
         ; Allow plugins to make new posts
         (eval `(define empty-post ,empty-post))
+        
+        ; Allow access to the current site and post from within the plugin
+        (eval `(define site ,current-site-wrapper))
+        (eval `(define post ,current-post-wrapper))
         
         ; Read and evaluate each expression in the plugin file in turn
         (with-input-from-file file

@@ -52,10 +52,10 @@
             (string-join (list "address" "article" "aside" "audio" "blockquote" "canvas"
                                "dd" "div" "dl" "fieldset" "figcaption" "figure" "footer"
                                "form" "h1" "h2" "h3" "h4" "h5" "h6" "header" "hgroup" 
-                               "hr" "noscript" "ol" "output" "p" "pre" "section" "table"
-                               "tfoot" "ul" "video")
+                               "hr" "noscript" "ol" "output" "p" "pre" "script" "style"
+                               "section" "table" "tfoot" "ul" "video")
                          "|")
-            ")[^/>]*>")))
+            ")[^>]*/?>")))
 
 (define (add-paragraphs str)
   (with-input-from-string str
@@ -108,7 +108,8 @@
                 (define tag (cadr match))
                 (cond
                   ; We match the end as well
-                  [(regexp-match (pregexp (~a "</" tag ".*?>")) line)
+                  [(or (regexp-match (pregexp (~a "</" tag ".*?>")) line)
+                       (regexp-match (pregexp (~a "<" tag ".*?/>")) line))
                    (loop (cons line (buffer->output)) '() match-stack)]
                   ; Nope, add to the stack
                   [else

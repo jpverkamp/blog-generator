@@ -1,8 +1,6 @@
 (define rankings
   (make-hash))
 
-(define post #f)
-  
 (define (ranking index list-title)
   (define title (post "title"))
   (define new-list
@@ -20,4 +18,3 @@
                 `(li (a ((href ,item)) ,item))))))
   
 (register-plugin 'ranking ranking)
-(register-pre-render-plugin 'ranking (λ (new-post site) (set! post new-post)))

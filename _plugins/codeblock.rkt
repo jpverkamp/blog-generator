@@ -1,9 +1,14 @@
 (define (codeblock lang . body*)
+  (define (html-encode line)
+    (let* ([line (regexp-replace* #px"<" line "\\&lt;")]
+           [line (regexp-replace* #px">" line "\\&gt;")])
+      line))
+  
   (when (equal? lang "scheme")
     (set! lang "lisp"))
   
   `(pre ((class ,lang))
-        (code ,@body*)))
+        (code ,@(map html-encode body*))))
 
 (register-plugin 'codeblock codeblock)
 

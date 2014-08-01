@@ -22,7 +22,7 @@
   (and (>= (string-length haystack) (string-length needle))
        (equal? needle (substring haystack 0 (string-length needle)))))
 
-(define (generate-atom site [filter-category ""])
+(define (generate-atom [filter-category ""])
   (set! filter-category (string-trim filter-category "/"))
   
   ; Generate a list of posts

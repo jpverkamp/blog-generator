@@ -1,7 +1,6 @@
 (include "_plugins/published-on.rkt")
 (include "_plugins/tag-list.rkt")
 
-(define site-ref #f)
 (define categories #f)
 
 (define (snoc x ls) (reverse (cons x (reverse ls))))
@@ -9,7 +8,6 @@
 ; Add categories to each post, assuming they are nested with / delims
 (define (add-nested-categories! site)
   (set! categories (make-hash))
-  (set! site-ref site)
   
   ; Create a nested category hash with a key *posts* at each level listing all posts
   (for ([post (in-list (site "posts"))] #:when (post "categories"))
@@ -45,7 +43,7 @@
       (atom-post "template" "_blank")
       (atom-post "permalink" (~a (string-join (cons "category" (map slug (string-split path "/"))) "/") "/feed"))
       (atom-post "content" "<?xml version=\"1.0\" encoding=\"utf-8\"?>
-@generate-atom[@site @post{category}]")
+@generate-atom[@post{category}]")
       (atom-post "category" path)
       (site "posts" (snoc atom-post (site "posts"))))
     
@@ -61,7 +59,7 @@
 ; Inline plugin to render a nested navbar of first and second level categories in the bootstrap style
 (define (generate-navbar)
   (define (make-category-link . levels)
-    (string-join (list* (or (site-ref "url") "") "category" (map slug levels)) "/"))
+    (string-join (list* (or (site "url") "") "category" (map slug levels)) "/"))
   
   (define (sorted-string-hash-keys hash) (sort (filter string? (hash-keys hash)) string<?))
   
@@ -173,7 +171,7 @@
                          (< i include-post)))
                 `(li ((class "post-preview"))
                      (header
-                      (h2 ((class "entry-title")) (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title")))
+                      (h2 ((class "entry-title")) (a ((href ,(string-append (or (site "url") "") "/" (post "permalink")))) ,(post "title")))
                       (div ((class "entry-meta"))
                            ,(published-on (post "date"))))
                      (div ((class "preview")) ,(post "more"))
@@ -186,7 +184,7 @@
                          [else
                           (set! last-date-chunk date-chunk)
                           `((h3 ,date-chunk))])
-                     (a ((href ,(string-append (or (site-ref "url") "") "/" (post "permalink")))) ,(post "title")))])))))
+                     (a ((href ,(string-append (or (site "url") "") "/" (post "permalink")))) ,(post "title")))])))))
 
 (register-plugin 'post-list post-list)
 

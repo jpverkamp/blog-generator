@@ -2,6 +2,8 @@
 
 (provide load-plugins
          plugins
+         plugins-set-site!
+         plugins-set-post!
          pre-all!
          pre-render!
          post-render!
@@ -19,6 +21,9 @@
 
 (define (current-site-wrapper . args) (apply current-site args))
 (define (current-post-wrapper . args) (apply current-post args))
+
+(define (plugins-set-site! site) (set! current-site site))
+(define (plugins-set-post! post) (set! current-post post))
 
 ; Store any ordering requests for plugins
 (define plugins-before (make-hash))

@@ -42,6 +42,7 @@
       #;(atom-post "do-not-cache" #t)
       (atom-post "template" "_blank")
       (atom-post "permalink" (~a (string-join (cons "category" (map slug (string-split path "/"))) "/") "/feed"))
+      (atom-post "permalink-filename" "atom.xml")
       (atom-post "content" "<?xml version=\"1.0\" encoding=\"utf-8\"?>
 @generate-atom[@post{category}]")
       (atom-post "category" path)

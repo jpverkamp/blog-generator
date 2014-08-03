@@ -102,12 +102,16 @@
     
     (post "permalink" permalink)))
 
+(plugins-set-site! site)
+(hash-set! plugins 'site site)
+
 (printf "Formatting contents...\n")
 (site "posts" posts)
 (pre-all! site)
 (set! posts (site "posts"))
 
 (for ([post (in-list posts)])
+  (flush-output)
   (with-handlers ([exn:fail? (λ (err) (printf "Failed in '~a': ~a\n" (post "title") (exn-message err)))])
     ; Fix for Cygwin style paths on Windows, make them always Unix style
     (define system-agnostic-path
@@ -117,41 +121,48 @@
     ; Any files passed on the command line are always reprocessed (although state dependent pages may only partially work)
     (define cache-hash (sha1 (open-input-string (~a post))))
     (define cache-file (build-path cache-path (string-append cache-hash ".cache")))
-    (define cache-file-more (build-path cache-path (string-append cache-hash ".more")))
+
+    ; Allow posts to access their own metadata
+    (plugins-set-post! post)
+    (hash-set! plugins 'post post)
+    
+    (print-progress (format "  Rendering ~a" 
+                            (or (and @post{path} (file-name-from-path @post{path}))
+                                @post{title}
+                                "{unknown}")))
+
     (cond
+      ; Cached
       [(and (not @post{do-not-cache})
             (not @site{bypass-cache})
             (not (member system-agnostic-path files-to-parse))
             (file-exists? cache-file))
-       (post "content" (file->string cache-file))
-       (post "more" 
-             (if (file-exists? cache-file-more) 
-                 (file->string cache-file-more)
-                 (post "content")))]
+       (with-input-from-file cache-file
+         (thunk
+           (post "content" (read))
+           (post "rendered" (read))))]
+      ; Not cached
       [else
-       (print-progress (format "  Rendering ~a" (or (and @post{path} (file-name-from-path @post{path}))
-                                                    @post{title}
-                                                    "{unknown}")))
-       
-       ; Allow posts to access their own metadata and the site's
-       (hash-set! plugins 'post post)
-       (hash-set! plugins 'site site)
-       
        ; Render the main body of the post
        (pre-render! post site)
        (post "content" (render (post "content") #:environment plugins #:add-paragraphs #t))
        (post-render! post site)
-       
-       ; Split the section above <!--more-->
-       ; If that doesn't exist, the entire post becomes the more section
-       (post "more" (car (string-split (post "content") "<!--more-->")))
-       (with-output-to-file cache-file-more #:exists 'replace (thunk (display @post{more})))
-       
+    
        ; Render the template around the content
-       (post "content" (render-template (post "template" #:default "post") #:environment plugins))
+       (post "rendered" (render-template (post "template" #:default "post") #:environment plugins))
        
        ; Update the cache file
-       (with-output-to-file cache-file #:exists 'replace (thunk (display @post{content})))])))
+       (with-output-to-file cache-file
+         #:exists 'replace 
+         (thunk 
+           (write @post{content})
+           (write @post{rendered})))])
+    
+    ; Split the section above <!--more-->
+    ; If that doesn't exist, the entire post becomes the more section
+    (post "more" (car (string-split (post "content") "<!--more-->")))))
+       
+    
 
 (site "posts" posts)
 (post-all! site)
@@ -170,9 +181,9 @@
         (copy-file file (build-path path (file-name-from-path file)))))
 
     ; Write the file to the system
-    (with-output-to-file (build-path path "index.htm")
+    (with-output-to-file (build-path path (or @post{permalink-filename} "index.htm"))
       (thunk
-       (display @post{content})))))
+       (display @post{rendered})))))
 
 (printf "Copying static content...\n")
 (system "cp -r _static/* _build/")

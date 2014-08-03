@@ -52,8 +52,12 @@
             (string-join (list "address" "article" "aside" "audio" "blockquote" "canvas"
                                "dd" "div" "dl" "fieldset" "figcaption" "figure" "footer"
                                "form" "h1" "h2" "h3" "h4" "h5" "h6" "header" "hgroup" 
-                               "hr" "noscript" "ol" "output" "p" "pre" "script" "style"
-                               "section" "table" "tfoot" "ul" "video")
+                               "hr" "noscript" "ol" "output" "p" "pre" "section" "table"
+                               "tfoot" "ul" "video"
+                               ; Special cases for inline javascript / styles
+                               "script" "style"
+                               ; Special cases for XML
+                               "\\?xml" "feed")
                          "|")
             ")[^>]*/?>")))
 

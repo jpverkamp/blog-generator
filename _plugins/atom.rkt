@@ -53,7 +53,7 @@
                (link ((href ,(string-append (site "url") (post "permalink")))))
                (id ,(uuid (~a (site "url") "/" (post "permalink"))))
                (updated ,(format-date (post "date")))
-               (summary ((type "html")) ,(~a "<![CDATA[" (post "more") "]]>"))
-               #;(content ((type "html")) ,(~a "<![CDATA[" (post "content") "]]>"))))))
+               (summary ((type "html")) ,(~a "<![CDATA[" (or (post "more") (post "content")) "]]>"))
+               (content ((type "html")) ,(~a "<![CDATA[" (post "content") "]]>"))))))
 
 (register-plugin 'generate-atom generate-atom)

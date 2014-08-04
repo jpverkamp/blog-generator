@@ -27,11 +27,18 @@
   
   ; Generate a list of posts
   (define posts
-    (for/list ([post (in-list (reverse (site "posts")))]
+    (for/list ([post (in-list (site "posts"))]
                #:when (for/first ([post-category (in-list (or (post "categories") '()))]
                                   #:when (starts-with? post-category filter-category))
                         #t))
       post))
+  
+  ; Sort the posts by date
+  (set! posts (sort posts (λ (post1 post2)
+                            (and (post1 "date")
+                                 (post2 "date")
+                                 (> (date->seconds (post1 "date"))
+                                    (date->seconds (post2 "date")))))))
   
   ; Limit the number of posts, if specified in config
   (when (and (site "atom-posts")

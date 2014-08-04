@@ -75,12 +75,11 @@
     
     new-post))
 
-(parameterize ([date-display-format 'iso-8601])
-  (set! posts (sort posts (λ (post1 post2)
-                            (and (post1 "date")
-                                 (post2 "date")
-                                 (string<? (date->string (post1 "date"))
-                                           (date->string (post2 "date"))))))))
+(set! posts (sort posts (λ (post1 post2)
+                          (and (post1 "date")
+                               (post2 "date")
+                               (< (date->seconds (post1 "date"))
+                                  (date->seconds (post2 "date")))))))
 
 (printf "Generating permalinks...\n")
 (for ([post (in-list posts)])

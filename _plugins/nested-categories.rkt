@@ -24,7 +24,6 @@
       ; Basic post
       (define new-post (empty-post))
       (new-post "title" name)
-      #;(new-post "do-not-cache" #t)
       (new-post "permalink" (string-join (cons "category" (map slug (string-split path "/"))) "/"))
       (new-post "template" "post")
       (new-post "content" "
@@ -36,17 +35,18 @@
       (new-post "category" path)
       (site "posts" (snoc new-post (site "posts")))
       
-      ; Atom feed
-      (define atom-post (empty-post))
-      (atom-post "title" (~a name " Feed"))
-      #;(atom-post "do-not-cache" #t)
-      (atom-post "template" "_blank")
-      (atom-post "permalink" (~a (string-join (cons "category" (map slug (string-split path "/"))) "/") "/feed"))
-      (atom-post "permalink-filename" "atom.xml")
-      (atom-post "content" "<?xml version=\"1.0\" encoding=\"utf-8\"?>
+      ; Atom feed (but only for top level, not for archives)
+      (when (and (not (regexp-match #px"Archives" path))
+                 (= 2 (length (regexp-match* #px"/" path))))
+        (define atom-post (empty-post))
+        (atom-post "title" (~a name " Feed"))
+        (atom-post "template" "_blank")
+        (atom-post "permalink" (~a (string-join (cons "category" (map slug (string-split path "/"))) "/") "/feed"))
+        (atom-post "permalink-filename" "atom.xml")
+        (atom-post "content" "<?xml version=\"1.0\" encoding=\"utf-8\"?>
 @generate-atom[@post{category}]")
-      (atom-post "category" path)
-      (site "posts" (snoc atom-post (site "posts"))))
+        (atom-post "category" path)
+        (site "posts" (snoc atom-post (site "posts")))))
     
     (for ([category (in-list (hash-keys h))] #:when (string? category))
       (loop (hash-ref h category (hash))

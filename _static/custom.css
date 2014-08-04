@@ -1,19 +1,19 @@
 /* I like green */
 a {
   color: #080;
-  text-decoration: none; 
+  text-decoration: none;
   transition: .5s;
 }
 
 a:visited {
   color: #480;
-  text-decoration: none; 
+  text-decoration: none;
   transition: .5s;
 }
 
 a:hover, a:visited:hover {
-  color: #0f0; 
-  text-decoration: none; 
+  color: #0f0;
+  text-decoration: none;
   transition: .5s;
 }
 
@@ -61,12 +61,13 @@ hr {
 /* Probably shouldn't do this, but get it working first, fast second */
 img {
   max-width: 90%;
+  margin: 4px;
   padding: 4px;
   background-color: white;
   border: 1px solid #ddd;
   border-radius: 4px;
 }
 
-pre { 
+pre {
   margin: 1em 0;
 }

@@ -11,7 +11,7 @@
 	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" />
 	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css" />
 	<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
-	
+
 	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/3.0.3a/ekko-lightbox.min.css" />
 	<script src="//cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/3.0.3a/ekko-lightbox.min.js"></script>
 
@@ -22,9 +22,9 @@
 	<!-- MathJax for LaTeX support -->
 	<script src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
-	<!-- JSFlickrGallery for Flickr Galleries -->
-	<script type="text/javascript" src="/js-flickr-gallery/js/js-flickr-gallery.min.js"></script>
-	<link rel="stylesheet" type="text/css" href="/js-flickr-gallery/css/js-flickr-gallery.css" />
+	<!-- nanoGallery for Flickr Galleries -->
+	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/nanogallery/4.4.2/css/themes/light/nanogallery_light.css" />
+	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/nanogallery/4.4.2/jquery.nanogallery.min.js"></script>
 
 	<!-- Any custom CSS or JS that I've written; this should be kept minimal -->
 	<link rel="stylesheet" href="/custom.css" />
@@ -34,7 +34,7 @@
 </head>
 <body>
 	<header class="container">
-    @render-template{navbar}
+    	@render-template{navbar}
 	</header>
 
 	<article class="container">
@@ -54,15 +54,15 @@
 		<div class="entry-footnotes">
 			@or[@post{footnotes} ""]
 		</div>
-		
+
 		@disqus[]
 	</article>
-	
+
 	<footer class="container" role="contentinfo">
 		@generate-previous-next[@post @site]
 
 		<div class="legal">
-			All posts unless otherwise mentioned are licensed  under <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/3.0/deed.en_US"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-nc-sa/3.0/80x15.png" /></a><br />
+			All posts unless otherwise mentioned are licensed under <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/3.0/deed.en_US"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-nc-sa/3.0/80x15.png" /></a><br />
 			Any source code unless otherwise mentioned is licensed under the <a href="http://directory.fsf.org/wiki/License:BSD_3Clause">3 clause BSD license</a>
 		</div>
 	</footer>

@@ -1,7 +1,21 @@
 /* I like green */
-a         { color: #00bf00; }
-a:hover   { color: #00ff00; }
-a:visited { color: #008000; }
+a {
+  color: #080;
+  text-decoration: none; 
+  transition: .5s;
+}
+
+a:visited {
+  color: #480;
+  text-decoration: none; 
+  transition: .5s;
+}
+
+a:hover, a:visited:hover {
+  color: #0f0; 
+  text-decoration: none; 
+  transition: .5s;
+}
 
 /* Make Bootstrap dropdown menus display on hover and clickable */
 .dropdown:hover .dropdown-menu {
@@ -35,10 +49,6 @@ footer {
 }
 
 /* I like small caps, so sue me :) */
-h1.entry-title {
-  font-variant: small-caps;
-}
-
 .entry-date {
   font-variant: small-caps;
 }

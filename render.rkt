@@ -22,19 +22,22 @@
   (define (attrs key* val*) (string-join (map (λ (key val) (format "~a=\"~a\"" key val)) key* val*) " "))
   (define (str-body body*)  (apply string-append (map stringify body*)))
   
+  (define (voidable? tag)
+    (member tag '(area base br col command embed hr img input keygen link meta param source track wbr)))
+  
   (match thing
     [(or (? void?) '())
      ""]
     [(? string?) 
      thing]
-    [`(,tag ((,key ,val) (,key* ,val*) ...) ,body ,body* ...)
-     (string-append "<" (~a tag) " " (attrs (cons key key*) (cons val val*)) ">" (str-body (cons body body*)) "</" (~a tag) ">")]
-    [`(,tag ((,key ,val) (,key* ,val*) ...))
+    [`(,(? voidable? tag) ((,key ,val) (,key* ,val*) ...))
      (string-append "<" (~a tag) " " (attrs (cons key key*) (cons val val*)) " />")]
-    [`(,tag ,body ,body* ...)
-     (string-append "<" (~a tag) ">" (str-body (cons body body*)) "</" (~a tag) ">")]
-    [`(,tag)
+    [`(,tag ((,key ,val) (,key* ,val*) ...) ,body* ...)
+     (string-append "<" (~a tag) " " (attrs (cons key key*) (cons val val*)) ">" (str-body body*) "</" (~a tag) ">")]
+    [`(,(? voidable? tag))
      (string-append "<" (~a tag) " />")]
+    [`(,tag ,body* ...)
+     (string-append "<" (~a tag) ">" (str-body body*) "</" (~a tag) ">")]
     [any
      (~a any)]))
 

@@ -10,11 +10,10 @@
          post-all!
          slug)
 
-(require racket/runtime-path
-         "render.rkt"
+(require "render.rkt"
          "post.rkt")
 
-(define-runtime-path plugin-path "_plugins")
+(define plugin-path "_plugins")
 
 (define current-site #f)
 (define current-post #f)

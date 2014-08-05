@@ -12,7 +12,7 @@
   
   (hash-set! rankings list-title new-list)
   
-  `(div (h3 ,list-title)
+  `(div (h3 ((class "ranking-title")) ,list-title)
         (ol ,@(for/list ([item (in-list (hash-ref rankings list-title))])
                 (match-define `(,title ,link) item)
                 `(li (a ((href ,link)) ,title))))))

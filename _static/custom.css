@@ -53,8 +53,8 @@ footer {
   font-variant: small-caps;
 }
 
-/* Don't let floats get past hrs (mostly for images in post previews) */
-hr {
+/* Don't let floats get past hrs or titles (mostly for images in post previews) */
+hr, .ranking-title {
   clear: both;
 }
 

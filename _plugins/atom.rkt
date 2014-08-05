@@ -35,10 +35,8 @@
   
   ; Sort the posts by date
   (set! posts (sort posts (λ (post1 post2)
-                            (and (post1 "date")
-                                 (post2 "date")
-                                 (> (date->seconds (post1 "date"))
-                                    (date->seconds (post2 "date")))))))
+                          (< (if (post1 "date") (date->seconds (post1 "date")) 0)
+                             (if (post1 "date") (date->seconds (post1 "date")) 0)))))
   
   ; Limit the number of posts, if specified in config
   (when (and (site "atom-posts")

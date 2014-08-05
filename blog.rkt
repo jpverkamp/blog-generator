@@ -3,16 +3,15 @@
 (require file/sha1
          racket/cmdline
          racket/date
-         racket/runtime-path
          "plugin.rkt"
          "post.rkt"
          "render.rkt")
 
-(define-runtime-path posts-path "_posts")
-(define-runtime-path output-path "_build")
-(define-runtime-path templates-path "_templates")
-(define-runtime-path cache-path "_cache")
-(define-runtime-path config-file "config.yaml")
+(define posts-path     "./_posts")
+(define output-path    "./_build")
+(define templates-path "./_templates")
+(define cache-path     "./_cache")
+(define config-file    "./config.yaml")
 
 (make-directory* cache-path)
 

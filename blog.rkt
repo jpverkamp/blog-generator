@@ -7,11 +7,11 @@
          "post.rkt"
          "render.rkt")
 
-(define posts-path     "./_posts")
-(define output-path    "./_build")
-(define templates-path "./_templates")
-(define cache-path     "./_cache")
-(define config-file    "./config.yaml")
+(define posts-path     "_posts")
+(define output-path    "_build")
+(define templates-path "_templates")
+(define cache-path     "_cache")
+(define config-file    "config.yaml")
 
 (make-directory* cache-path)
 

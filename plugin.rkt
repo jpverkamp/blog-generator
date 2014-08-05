@@ -109,7 +109,7 @@
   (let* ([str (string-downcase str)]
          [str (regexp-replace* #px"'" str "")]
          [str (regexp-replace* #px"[^a-z0-9]+" (string-downcase str) "-")]
-         [str (string-trim str)])
+         [str (string-trim str "-")])
     str))
 
 (register-plugin 'slug slug)

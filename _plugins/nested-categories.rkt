@@ -142,10 +142,9 @@
     ((if sort-ascending? identity reverse)
      (case sort-by
        [(date) 
-        (parameterize ([date-display-format 'iso-8601])
-          (sort post-list (λ (post1 post2) 
-                            (string<? (~a (date->string (post1 "date"))) 
-                                      (~a (date->string (post2 "date")))))))]
+        (sort post-list (λ (post1 post2)
+                          (< (if (post1 "date") (date->seconds (post1 "date")) 0)
+                             (if (post2 "date") (date->seconds (post2 "date")) 0))))]
        [(title)
         (sort post-list (λ (post1 post2)
                           (string<? (~a (slug (post1 "title")))

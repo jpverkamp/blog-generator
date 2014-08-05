@@ -17,8 +17,14 @@
           (href ,(or full-size absolute-path))
           ,@(if classes `((class ,classes)) `()))
          (img ((src ,absolute-path))))]
+    [full-size
+     `(a ((data-toggle "lightbox") 
+          (href ,(or full-size absolute-path))
+          ,@(if classes `((class ,classes)) `()))
+         ,src)]
     [else
-     `(a ((href ,absolute-path) ,@(if classes `((class ,classes)) `()))
+     `(a ((href ,(or full-size absolute-path))
+          ,@(if classes `((class ,classes)) `()))
          ,src)]))
    
 (register-plugin 'embed embed)

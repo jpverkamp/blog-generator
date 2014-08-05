@@ -1,4 +1,4 @@
-(define (embed . args)
+(define (embed #:full-size [full-size #f] . args)
   (define classes 
     (cond
       [(> (length args) 1)
@@ -10,9 +10,12 @@
     (last args))
   
   (define absolute-path (~a (or (site "url") "/") "/" (or (post "permalink") ".") "/" src))
+
   (cond
     [(regexp-match #px"\\.(png|jpg|jpeg|gif)$" src)
-     `(a ((data-toggle "lightbox") (href ,absolute-path) ,@(if classes `((class ,classes)) `())) 
+     `(a ((data-toggle "lightbox") 
+          (href ,(or full-size absolute-path))
+          ,@(if classes `((class ,classes)) `()))
          (img ((src ,absolute-path))))]
     [else
      `(a ((href ,absolute-path) ,@(if classes `((class ,classes)) `()))

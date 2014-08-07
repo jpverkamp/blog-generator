@@ -88,8 +88,8 @@
     new-post))
 
 (set! posts (sort posts (λ (post1 post2)
-                          (< (if (post1 "date") (date->seconds (post1 "date")) 0)
-                             (if (post2 "date") (date->seconds (post2 "date")) 0)))))
+                          (< (if (post1 "date") (date->seconds (post1 "date")) +inf.0)
+                             (if (post2 "date") (date->seconds (post2 "date")) +inf.0)))))
 
 (printf "Generating permalinks...\n")
 (for ([post (in-list posts)])

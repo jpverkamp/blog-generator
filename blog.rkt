@@ -96,7 +96,7 @@
     (-> "{month}"  (0pad (date-month date) 2))
     (-> "{day}"    (0pad (date-day date)   2))
     (-> "{yymmdd}" (string-append (0pad (remainder (date-year date) 100) 2) (0pad (date-month date) 2) (0pad (date-day date) 2)))
-    (-> "{title}"  (slug @post{title}))
+    (-> "{slug}"   (or @post{slug} (slug @post{title})))
     
     (post "permalink" permalink)))
 

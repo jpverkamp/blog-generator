@@ -74,9 +74,11 @@
     
     new-post))
 
+; Use +inf.0 for dateless posts so they render last
+; Otherwise Home and category listings don't quite work out
 (set! posts (sort posts (λ (post1 post2)
-                          (< (if (post1 "date") (date->seconds (post1 "date")) 0)
-                             (if (post2 "date") (date->seconds (post2 "date")) 0)))))
+                          (< (if (post1 "date") (date->seconds (post1 "date")) +inf.0)
+                             (if (post2 "date") (date->seconds (post2 "date")) +inf.0)))))
 
 (printf "Generating permalinks...\n")
 (for ([post (in-list posts)])

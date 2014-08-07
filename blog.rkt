@@ -33,9 +33,22 @@
   (command-line
    #:program "blog.rkt"
    #:once-each 
-   [("--bypass-cache") "Regenerate all pages, ignoring currently cached versions" (site "bypass-cache" #t)]
+   [("--bypass-cache")
+    "Regenerate all pages, ignoring currently cached versions"
+    (site "bypass-cache" #t)]
+   [("--deploy")       
+    "Deploy to s3"                                            
+    (site "bypass-cache" #t) 
+    (site "deploying" #t)]
    #:args files
    (map (λ (file) (regexp-replace* #px"\\\\+" (path->string (path->complete-path (string->path file))) "/")) files)))
+
+; Make sure that the site url is set, fall back to an empty string (absolute urls)
+(cond
+  [(site "deploying")
+   (site "url" (or @site{deploy-url} @site{url} ""))]
+  [else
+   (site "url" (or @site{url} ""))])
 
 (printf "Loading plugins...\n")
 (load-plugins)
@@ -74,11 +87,9 @@
     
     new-post))
 
-; Use +inf.0 for dateless posts so they render last
-; Otherwise Home and category listings don't quite work out
 (set! posts (sort posts (λ (post1 post2)
-                          (< (if (post1 "date") (date->seconds (post1 "date")) +inf.0)
-                             (if (post2 "date") (date->seconds (post2 "date")) +inf.0)))))
+                          (< (if (post1 "date") (date->seconds (post1 "date")) 0)
+                             (if (post2 "date") (date->seconds (post2 "date")) 0)))))
 
 (printf "Generating permalinks...\n")
 (for ([post (in-list posts)])
@@ -159,8 +170,6 @@
     ; Split the section above <!--more-->
     ; If that doesn't exist, the entire post becomes the more section
     (post "more" (car (string-split (post "content") "<!--more-->")))))
-       
-    
 
 (site "posts" posts)
 (post-all! site)
@@ -185,3 +194,20 @@
 
 (printf "Copying static content...\n")
 (system "cp -r _static/* _build/")
+
+(when (site "deploying")
+  (printf "Deploying to s3...\n")
+  
+  (when (not @site{deploy-bucket})
+    (error 'deploy "ERROR: deploy-bucket not specified"))
+  
+  (define s3cmd (find-executable-path "s3cmd"))
+  (when (not s3cmd)
+    (error 'deploy "ERROR: Cannot find s3cmd"))
+  
+  (current-directory output-path)
+  (printf "Converting line endings...\n")
+  (system "find . -type f -exec dos2unix {} \\; 2>1 > /dev/null")
+  
+  (printf "Uploading...\n")
+  (system* s3cmd "sync" "--delete-removed" "." @site{deploy-bucket}))

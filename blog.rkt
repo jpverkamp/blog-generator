@@ -16,11 +16,21 @@
 (make-directory* cache-path)
 
 (define print-progress
-  (let ([current-progress #f])
-    (λ (new-progress)
-      (when (not (equal? current-progress new-progress))
-        (set! current-progress new-progress)
-        (displayln current-progress)))))
+  (let ([current-progress #f]
+        [replaced-last #f])
+    (λ (new-progress #:replace [replace #f])
+      (cond
+        [(and replaced-last replace)
+         (display (~a (make-string (string-length current-progress) #\space) "\r"))]
+        [(and replaced-last (not replace))
+         (display "\n")])
+      
+      (display new-progress)
+      
+      (display (if replace "\r" "\n"))
+      
+      (set! current-progress new-progress)
+      (set! replaced-last replace))))
 
 (printf "Loading site config...\n")
 (define site
@@ -119,7 +129,8 @@
 (pre-all! site)
 (set! posts (site "posts"))
 
-(for ([post (in-list posts)])
+(for ([post (in-list posts)]
+      [i (in-naturals 1)])
   (flush-output)
   (with-handlers ([exn:fail? (λ (err) (printf "Failed in '~a': ~a\n" (post "title") (exn-message err)))])
     ; Fix for Cygwin style paths on Windows, make them always Unix style
@@ -135,10 +146,11 @@
     (plugins-set-post! post)
     (hash-set! plugins 'post post)
     
-    (print-progress (format "  Rendering ~a" 
-                            (or (and @post{path} (file-name-from-path @post{path}))
-                                @post{title}
-                                "{unknown}")))
+    (print-progress (format "  Rendering [~a/~a] ~a" 
+                            i
+                            (length posts)
+                            (or (and @post{path} (file-name-from-path @post{path})) @post{title} "{unknown}"))
+                    #:replace #t)
 
     (cond
       ; Cached

@@ -50,6 +50,9 @@
     "Deploy to s3"                                            
     (site "bypass-cache" #t) 
     (site "deploying" #t)]
+   [("--test")
+    "Test locally using the built in server"
+    (site "testing" #t)]
    #:args files
    (map (λ (file) (regexp-replace* #px"\\\\+" (path->string (path->complete-path (string->path file))) "/")) files)))
 
@@ -223,3 +226,12 @@
   
   (printf "Uploading...\n")
   (system* s3cmd "sync" "--delete-removed" "." @site{deploy-bucket}))
+
+(when (site "testing")
+  (current-directory output-path)
+  
+  (define python (find-executable-path "python"))
+  (when (not python)
+    (error 'text "Cannot find python"))
+  
+  (system* python "-m" "SimpleHTTPServer"))

@@ -39,6 +39,8 @@
       (make-hash)))
 (site "content" #:delete #t)
 
+(define do-not-cache #f)
+
 (define files-to-parse
   (command-line
    #:program "blog.rkt"
@@ -53,8 +55,8 @@
    [("--test")
     "Test locally using the built in server"
     (site "testing" #t)]
-   #:args files
-   (map (λ (file) (regexp-replace* #px"\\\\+" (path->string (path->complete-path (string->path file))) "/")) files)))
+   #:args do-not-cacheables
+   (set! do-not-cache do-not-cacheables)))
 
 ; Make sure that the site url is set, fall back to an empty string (absolute urls)
 (cond
@@ -104,6 +106,10 @@
                           (< (if (post1 "date") (date->seconds (post1 "date")) +inf.0)
                              (if (post2 "date") (date->seconds (post2 "date")) +inf.0)))))
 
+(printf "Generating slugs...\n")
+(for ([post (in-list posts)])
+  (post "slug" (or @post{slug} (slug @post{title}))))
+
 (printf "Generating permalinks...\n")
 (for ([post (in-list posts)])
   (with-handlers ([exn:fail? (λ (err) (printf "Failed in '~a': ~a\n" (post "title") (exn-message err)))])
@@ -120,7 +126,7 @@
     (-> "{month}"  (0pad (date-month date) 2))
     (-> "{day}"    (0pad (date-day date)   2))
     (-> "{yymmdd}" (string-append (0pad (remainder (date-year date) 100) 2) (0pad (date-month date) 2) (0pad (date-day date) 2)))
-    (-> "{slug}"   (or @post{slug} (slug @post{title})))
+    (-> "{slug}"   @post{slug})
     
     (post "permalink" permalink)))
 
@@ -136,10 +142,6 @@
       [i (in-naturals 1)])
   (flush-output)
   (with-handlers ([exn:fail? (λ (err) (printf "Failed in '~a': ~a\n" (post "title") (exn-message err)))])
-    ; Fix for Cygwin style paths on Windows, make them always Unix style
-    (define system-agnostic-path
-      (and @post{path} (regexp-replace* #px"\\\\+" (path->string (path->complete-path @post{path})) "/")))
-
     ; Check if we already have a cached version of the post (if we're not bypassing the cache)
     ; Any files passed on the command line are always reprocessed (although state dependent pages may only partially work)
     (define cache-hash (sha1 (open-input-string (~a post))))
@@ -159,7 +161,10 @@
       ; Cached
       [(and (not @post{do-not-cache})
             (not @site{bypass-cache})
-            (not (member system-agnostic-path files-to-parse))
+            (not (and @post{slug}
+                      (ormap (λ (each) 
+                               (regexp-match (pregexp each) @post{slug})) 
+                             do-not-cache)))
             (file-exists? cache-file))
        (with-input-from-file cache-file
          (thunk
@@ -228,6 +233,8 @@
   (system* s3cmd "sync" "--delete-removed" "." @site{deploy-bucket}))
 
 (when (site "testing")
+  (printf "Starting test server...\n")
+  
   (current-directory output-path)
   
   (define python (find-executable-path "python"))

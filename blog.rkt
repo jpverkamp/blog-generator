@@ -9,11 +9,18 @@
 
 (define posts-path     "_posts")
 (define output-path    "_build")
+(define deploy-path    "_deploy")
 (define templates-path "_templates")
 (define cache-path     "_cache")
 (define config-file    "config.yaml")
 
 (make-directory* cache-path)
+
+(define (system+ cmd . args)
+  (define str (apply format (cons cmd args)))
+  (printf ">>> ~a\n" str)
+  (flush-output)
+  (system str))
 
 (define print-progress
   (let ([current-progress #f]
@@ -180,12 +187,13 @@
        ; Render the template around the content
        (post "rendered" (render-template (post "template" #:default "post") #:environment plugins))
        
-       ; Update the cache file
-       (with-output-to-file cache-file
-         #:exists 'replace 
-         (thunk 
-           (write @post{content})
-           (write @post{rendered})))])
+       ; Update the cache file (if not deploying)
+       (when (not @site{deploying})
+         (with-output-to-file cache-file
+           #:exists 'replace 
+           (thunk 
+             (write @post{content})
+             (write @post{rendered}))))])
     
     ; Split the section above <!--more-->
     ; If that doesn't exist, the entire post becomes the more section
@@ -196,7 +204,7 @@
 (set! posts (site "posts"))
 
 (printf "Writing posts...\n")
-(system (format "rm -rf '~a'" output-path))
+(system+ "rm -rf '~a'" output-path)
 (make-directory output-path)
 (for ([post (in-list posts)])
   (with-handlers ([exn? (λ (exn) (printf "Could not write '~a': ~a\n" (post "title") (exn-message exn)))])
@@ -213,32 +221,42 @@
        (display @post{rendered})))))
 
 (printf "Copying static content...\n")
-(system "cp -r _static/* _build/")
+(system+ "cp -r _static/* _build/")
 
 (when (site "deploying")
-  (printf "Deploying to s3...\n")
+  (printf "Deploying to GitHub pages...\n")
   
-  (when (not @site{deploy-bucket})
-    (error 'deploy "ERROR: deploy-bucket not specified"))
+  ; Make sure the correct settings exist
+  (when (not @site{deploy-repo}) (error 'deploy "deploy-repo not set"))
   
-  (define s3cmd (find-executable-path "s3cmd"))
-  (when (not s3cmd)
-    (error 'deploy "ERROR: Cannot find s3cmd"))
+  ; Make sure that the remote repository has been checked out
+  (when (not (directory-exists? deploy-path))
+    (when (not (system+ "git clone ~a ~a" @site{deploy-repo} deploy-path))
+      (error 'deploy "cannot clone deploy repo")))
   
-  (current-directory output-path)
-  (printf "Converting line endings...\n")
-  (system "find . -type f -exec dos2unix {} \\; 2>1 > /dev/null")
+  ; Update the directory to the lastest remote version
+  (system+ "cd ~a && git pull" deploy-path)
   
-  (printf "Uploading...\n")
-  (system* s3cmd "sync" "--delete-removed" "." @site{deploy-bucket}))
+  ; Copy files between the two directories
+  ; Remove the build directory, it messes up future test builds
+  (system+ "cp -r ~a/* ~a/" output-path deploy-path)
+  #;(system+ "rm -rf ~a" output-path)
+  
+  ; Verify changes with the user
+  (system+ "cd ~a && git status"  deploy-path)
+  (printf "Are the current changes acceptable? (y/n) ")
+  (flush-output)
+  (let loop ()
+    (case (read)
+      [(y Y) (void)]
+      [(n N) (error 'deploy "changes are not acceptable")]
+      [else  (loop)]))
+  
+  ; Add changes
+  (system+ "cd ~a && git add -A && git commit -m 'Automatic deployment' && git push" deploy-path))
 
 (when (site "testing")
   (printf "Starting test server...\n")
   
-  (current-directory output-path)
-  
-  (define python (find-executable-path "python"))
-  (when (not python)
-    (error 'text "Cannot find python"))
-  
-  (system* python "-m" "SimpleHTTPServer"))
+  (system+ "cd ~a"  output-path)
+  (system+ "python -mSimpleHTTPServer"))

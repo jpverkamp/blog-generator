@@ -93,14 +93,24 @@
           ; If we currently have a match stack, check for that first
           ; If we close a tag, take it off
           [(and (not (null? match-stack))
-                (regexp-match (cdar match-stack) line))
-           (loop (cons line (buffer->output)) '() (cdr match-stack))]
+                (regexp-match (third (first match-stack)) line))
+           (cond
+             ; Are we closing a paragraphizing tag? Make sure we get the last paragraph
+             [(first (first match-stack)) 
+              (match-define (list (list-rest before after) (list tag))
+                (list (regexp-split (third (first match-stack)) line)
+                      (regexp-match (third (first match-stack)) line)))
+              (loop `(,@after ,tag . ,(buffer->output before)) '() (cdr match-stack))]
+             ; Nope, continue on with our regularly scheduled text
+             [else
+              (loop (cons line (buffer->output)) '() (cdr match-stack))])]
           ; If we open a nested tag, add another copy to the stack
           [(and (not (null? match-stack))
-                (regexp-match (caar match-stack) line))
-           (loop (cons line (buffer->output)) '() (cons (car match-stack) match-stack))]
-          ; If we still have a stack, add directly to output
-          [(not (null? match-stack))
+                (regexp-match (second (first match-stack)) line))
+           (loop (cons line (buffer->output)) '() (cons (first match-stack) match-stack))]
+          ; If we still have a stack and we're not paragraphizing, add directly to output
+          [(and (not (null? match-stack))
+                (not (first (first match-stack))))
            (loop (cons line output) '() match-stack)]
           
           ; Do not paragraphize <!--more-->
@@ -122,7 +132,8 @@
                   [else
                    (loop (cons line (buffer->output))
                          '()
-                         (cons (cons (pregexp (~a "<" tag ".*?>"))
+                         (cons (list (regexp-match #px"<!--allow-paragraphs-->" line)
+                                     (pregexp (~a "<" tag ".*?>"))
                                      (pregexp (~a "</" tag ".*?>")))
                                match-stack))]))]
           ; Anything else gets added to the buffer

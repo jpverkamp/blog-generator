@@ -125,6 +125,7 @@
         (namespace-require 'racket)
         (namespace-require 'racket/date)
         (namespace-require 'racket/list)
+        (namespace-require 'racket/string)
         (namespace-require 'xml)
         
         ; Allow plugin files to register themselves

@@ -78,7 +78,8 @@
 (printf "Loading templates...\n")
 (define templates
   (for/hash ([path (in-directory templates-path)]
-             #:when (regexp-match #px"\\.html?$" path))
+             #:when (and (regexp-match #px"\\.htm$" path)
+                         (not (regexp-match #px"\\.embed\\.htm$" path))))
     (values (regexp-replace* #px"\\.[^.]*$" (path->string (file-name-from-path path)) "")
             (file->string path))))
 
@@ -97,7 +98,8 @@
 (printf "Reading posts...\n")
 (define posts
   (for/list ([path (in-directory posts-path)]
-             #:when (regexp-match #px"\\.htm$" path))
+             #:when (and (regexp-match #px"\\.htm$" path)
+                         (not (regexp-match #px"\\.embed\\.htm$" path))))
     
     (define new-post (with-input-from-file path read-post))
     

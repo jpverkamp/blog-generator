@@ -241,7 +241,7 @@
   
   ; Copy files between the two directories
   ; Remove the build directory, it messes up future test builds
-  (system+ "cp -r ~a/* ~a/" output-path deploy-path)
+  (system+ "cd ~a && rsync -azh --delete --filter=\"P .git\" . ../~a" output-path deploy-path)
   (system+ "rm -rf ~a" output-path)
   
   ; Verify changes with the user

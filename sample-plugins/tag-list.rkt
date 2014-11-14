@@ -23,11 +23,12 @@
      [#f ""]
      [(? hash?)
       `(ul ((class "tag-list list-inline"))
-           ,@(for/list ([(tag permalink) (in-hash tags)])
+           ,@(for/list ([tag (in-list (sort (hash-keys tags) string<?))])
+               (define permalink (hash-ref tags tag))
                `(li (a ((href ,(string-append (or (site "url") "") "/" permalink))) ,tag))))]
      [(? list?)
       `(ul ((class "tag-list list-inline"))
-           ,@(for/list ([tag (in-list tags)])
+           ,@(for/list ([tag (in-list (sort tags string<?))])
                `(li (a ((href ,(string-append (or (site "url") "") "/tag/" (slug tag)))) ,tag))))])))
 
 (register-plugin 'tag-list tag-list)  

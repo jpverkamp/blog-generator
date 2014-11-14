@@ -1,5 +1,7 @@
 #lang at-exp racket
 
+; Known packages: rackjure markdown sxml html-parsing yaml
+
 (require file/sha1
          racket/cmdline
          racket/date

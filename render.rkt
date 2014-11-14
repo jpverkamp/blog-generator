@@ -12,10 +12,7 @@
 (define render-namespace (make-base-namespace))
 (parameterize ([current-namespace render-namespace])
   ; For html elements as functions
-  (namespace-require 'html)
-  
-  ; Fix for @ expressions after they've been processed
-  (eval `(define @ '@)))
+  (namespace-require 'html))
 
 ; Turn anything into a string (xexprs that are elements get parsed, everything else is ~a'd)
 (define (stringify thing)

@@ -58,7 +58,7 @@
     "Regenerate all pages, ignoring currently cached versions"
     (site "bypass-cache" #t)]
    [("--deploy")       
-    "Deploy to s3"                                            
+    "Deploy to s3"
     (site "bypass-cache" #t) 
     (site "deploying" #t)]
    [("--test")
@@ -112,6 +112,8 @@
       (new-post "files-path" attachment-path))
     
     new-post))
+
+(set! posts (filter (λ (post) (not (post "draft"))) posts))
 
 (set! posts (sort posts (λ (post1 post2)
                           (< (if (post1 "date") (date->seconds (post1 "date")) +inf.0)

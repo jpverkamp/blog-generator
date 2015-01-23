@@ -42,8 +42,15 @@
 (define (run-at-exps ls)
   (apply
    string-append
-   (for/list ([chunk (in-list ls)] #:break (eof-object? chunk))
-     (stringify (eval chunk)))))
+   (for/list ([index (in-naturals)]
+              [chunk (in-list ls)] #:break (eof-object? chunk))
+     (with-handlers ([exn? (λ (exn) 
+                             (error 'render/run-at-exps
+                                    "~a in chunk ~a: ~a"
+                                    (exn-message exn)
+                                    index
+                                    chunk))])
+       (stringify (eval chunk))))))
 
 ; Add paragraphs to a mostly html document
 (define re-block
@@ -62,80 +69,89 @@
             ")[^>]*/?>")))
 
 (define (add-paragraphs str)
-  (with-input-from-string str
-    (λ ()
-      (let loop ([output '()]
-                 [buffer '()]
-                 [match-stack '()])
-        ; Loop while moving the buffer to output as a paragraph
-        (define (buffer->output [last-line #f])
-          (define new-buffer (if last-line (cons last-line buffer) buffer))
+  (define last-line (make-parameter (list 0 #f)))
+  
+  (with-handlers ([exn? (λ (exn)
+                          (error 'render:add-paragraphs
+                                 "~a at line ~a: ~a"
+                                 (exn-message exn)
+                                 (first (last-line))
+                                 (second (last-line))))])
+    (with-input-from-string str
+      (λ ()
+        (let loop ([output '()]
+                   [buffer '()]
+                   [match-stack '()])
+          ; Loop while moving the buffer to output as a paragraph
+          (define (buffer->output [last-line #f])
+            (define new-buffer (if last-line (cons last-line buffer) buffer))
+            (cond
+              [(null? new-buffer)
+               output]
+              [else
+               (cons (string-append "<p>" 
+                                    (string-join (map string-trim (reverse new-buffer)) " ")
+                                    "</p>")
+                     output)]))
+          
+          (define line (read-line))
+          (last-line (list (+ 1 (first (last-line))) line))
+          
           (cond
-            [(null? new-buffer)
-             output]
+            ; At the end, put the strings back together
+            ; Output buffer one last time if necessary
+            [(eof-object? line)
+             (string-join (reverse (buffer->output)) "\n")]
+            
+            ; If we currently have a match stack, check for that first
+            ; If we close a tag, take it off
+            [(and (not (null? match-stack))
+                  (regexp-match (third (first match-stack)) line))
+             (cond
+               ; Are we closing a paragraphizing tag? Make sure we get the last paragraph
+               [(first (first match-stack)) 
+                (match-define (list (list-rest before after) (list tag))
+                  (list (regexp-split (third (first match-stack)) line)
+                        (regexp-match (third (first match-stack)) line)))
+                (loop `(,@after ,tag . ,(buffer->output before)) '() (cdr match-stack))]
+               ; Nope, continue on with our regularly scheduled text
+               [else
+                (loop (cons line (buffer->output)) '() (cdr match-stack))])]
+            ; If we open a nested tag, add another copy to the stack
+            [(and (not (null? match-stack))
+                  (regexp-match (second (first match-stack)) line))
+             (loop (cons line (buffer->output)) '() (cons (first match-stack) match-stack))]
+            ; If we still have a stack and we're not paragraphizing, add directly to output
+            [(and (not (null? match-stack))
+                  (not (first (first match-stack))))
+             (loop (cons line output) '() match-stack)]
+            
+            ; Do not paragraphize <!--more-->
+            [(equal? "<!--more-->" line)
+             (loop (cons line (buffer->output)) '() match-stack)]
+            ; Empty lines end the current buffer
+            [(equal? "" (string-trim line))
+             (loop (buffer->output) '() match-stack)]
+            ; Opening block level tags 
+            [(regexp-match re-block line)
+             => (λ (match)
+                  (define tag (cadr match))
+                  (cond
+                    ; We match the end as well
+                    [(or (regexp-match (pregexp (~a "</" tag ".*?>")) line)
+                         (regexp-match (pregexp (~a "<" tag ".*?/>")) line))
+                     (loop (cons line (buffer->output)) '() match-stack)]
+                    ; Nope, add to the stack
+                    [else
+                     (loop (cons line (buffer->output))
+                           '()
+                           (cons (list (regexp-match #px"<!--allow-paragraphs-->" line)
+                                       (pregexp (~a "<" tag ".*?>"))
+                                       (pregexp (~a "</" tag ".*?>")))
+                                 match-stack))]))]
+            ; Anything else gets added to the buffer
             [else
-             (cons (string-append "<p>" 
-                                  (string-join (map string-trim (reverse new-buffer)) " ")
-                                  "</p>")
-                   output)]))
-
-        (define line (read-line))
-        
-        (cond
-          ; At the end, put the strings back together
-          ; Output buffer one last time if necessary
-          [(eof-object? line)
-           (string-join (reverse (buffer->output)) "\n")]
-          
-          ; If we currently have a match stack, check for that first
-          ; If we close a tag, take it off
-          [(and (not (null? match-stack))
-                (regexp-match (third (first match-stack)) line))
-           (cond
-             ; Are we closing a paragraphizing tag? Make sure we get the last paragraph
-             [(first (first match-stack)) 
-              (match-define (list (list-rest before after) (list tag))
-                (list (regexp-split (third (first match-stack)) line)
-                      (regexp-match (third (first match-stack)) line)))
-              (loop `(,@after ,tag . ,(buffer->output before)) '() (cdr match-stack))]
-             ; Nope, continue on with our regularly scheduled text
-             [else
-              (loop (cons line (buffer->output)) '() (cdr match-stack))])]
-          ; If we open a nested tag, add another copy to the stack
-          [(and (not (null? match-stack))
-                (regexp-match (second (first match-stack)) line))
-           (loop (cons line (buffer->output)) '() (cons (first match-stack) match-stack))]
-          ; If we still have a stack and we're not paragraphizing, add directly to output
-          [(and (not (null? match-stack))
-                (not (first (first match-stack))))
-           (loop (cons line output) '() match-stack)]
-          
-          ; Do not paragraphize <!--more-->
-          [(equal? "<!--more-->" line)
-           (loop (cons line (buffer->output)) '() match-stack)]
-          ; Empty lines end the current buffer
-          [(equal? "" (string-trim line))
-           (loop (buffer->output) '() match-stack)]
-          ; Opening block level tags 
-          [(regexp-match re-block line)
-           => (λ (match)
-                (define tag (cadr match))
-                (cond
-                  ; We match the end as well
-                  [(or (regexp-match (pregexp (~a "</" tag ".*?>")) line)
-                       (regexp-match (pregexp (~a "<" tag ".*?/>")) line))
-                   (loop (cons line (buffer->output)) '() match-stack)]
-                  ; Nope, add to the stack
-                  [else
-                   (loop (cons line (buffer->output))
-                         '()
-                         (cons (list (regexp-match #px"<!--allow-paragraphs-->" line)
-                                     (pregexp (~a "<" tag ".*?>"))
-                                     (pregexp (~a "</" tag ".*?>")))
-                               match-stack))]))]
-          ; Anything else gets added to the buffer
-          [else
-           (loop output (cons line buffer) match-stack)])))))
+             (loop output (cons line buffer) match-stack)]))))))
 
 ; Flatten a mixed list of strings and x-expressions to an html string
 (define (flatten-to-html ls)

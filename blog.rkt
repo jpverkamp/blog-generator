@@ -229,6 +229,26 @@
 (printf "Copying static content...\n")
 (system+ "cp -r _static/* _build/")
 
+(printf "Adding redirects...\n")
+(when @site{redirects}
+  (for ([(redirect-src redirect-dst) (in-hash @site{redirects})])
+    (printf "~a -> ~a\n" redirect-src redirect-dst)
+    (define path (build-path output-path redirect-src))
+    (make-parent-directory* path)
+    (with-output-to-file path
+      (thunk
+       (display (format "<html>
+<head>
+<meta http-equiv=\"refresh\" content=\"0; url=~a\" />
+<script>
+window.location = '~a';
+</script>
+</head>
+<body>
+Redirecting to <a href=\"~a\">~a</a>.
+</body>
+</html>" redirect-dst redirect-dst redirect-dst redirect-dst))))))
+
 (when (site "deploying")
   (printf "Deploying to GitHub pages...\n")
   

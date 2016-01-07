@@ -4,5 +4,9 @@ This is currently a work in progress, although I hope to start using it for my o
 
 Dependencies (install with `raco pkg install`):
 - at-exp-lib
-- srfi (recursively install a *lot* of packages)
 - html
+- html-parsing
+- markdown
+- srfi (recursively install a *lot* of packages)
+- rackjure
+- yaml
